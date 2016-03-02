@@ -43,4 +43,6 @@ void dmx1SetChannel(uint16_t channel, uint8_t value);
 void dmx2SetChannel(uint16_t channel, uint8_t value);
 void dmx3SetChannel(uint16_t channel, uint8_t value);
 
+uint8_t dmxUpdate(uint8_t *data, uint8_t len);
+
 #endif

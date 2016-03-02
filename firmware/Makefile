@@ -104,7 +104,7 @@ include $(CHIBIOS)/os/common/startup/ARMCMx/compilers/GCC/mk/startup_stm32f1xx.m
 # HAL-OSAL files (optional).
 include $(CHIBIOS)/os/hal/hal.mk
 include $(CHIBIOS)/os/hal/ports/STM32/STM32F1xx/platform.mk
-include $(CHIBIOS)/os/hal/boards/MAPLEMINI_STM32_F103/board.mk
+include ../board//board.mk
 include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
@@ -132,7 +132,7 @@ CSRC = $(STARTUPSRC) \
        $(HALSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
-       dmx.c usbdrv.c main.c
+       dmx.c usb_protocol.c usbdrv.c main.c
 
 #       $(TESTSRC) \
 #       $(STREAMSSRC) \
@@ -243,6 +243,6 @@ $(BUILD_NUMBER_FILE): $(CSRC)
 	@echo $$(($$(cat $(BUILD_NUMBER_FILE)) + 1)) > $(BUILD_NUMBER_FILE)
 
 boot: build/$(PROJECT).bin
-	(sudo ./tools/usbtool -v 0x0483 -p 0xfedc control out vendor device 0 0 0; sleep 1) || true
+	#(sudo ./tools/usbtool -v 0x0483 -p 0xfedc control out vendor device 0 0 0; sleep 1) || true
 	sudo dfu-util -d 0483:df11 -a 0 -s $(LOAD_ADDRESS):leave -D build/$(PROJECT).bin
 

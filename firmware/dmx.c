@@ -1,6 +1,7 @@
 
-#include "hal.h"
+#include <hal.h>
 #include "dmx.h"
+#include "usbdrv.h"
 
 void dmx1ProcessTransferComplete(UARTDriver *uart);
 void dmx2ProcessTransferComplete(UARTDriver *uart);
@@ -73,7 +74,7 @@ void dmx1SetDirection(eDmxDirection dir)
 
 void dmx1SetChannel(uint16_t channel, uint8_t value)
 {
-  if(channel > 512) return;
+  if(channel > 512 || channel == 0) return;
   dmx1Stream[channel] = value & 0xff;
 }
 
@@ -142,7 +143,7 @@ void dmx2SetDirection(eDmxDirection dir)
 
 void dmx2SetChannel(uint16_t channel, uint8_t value)
 {
-  if(channel > 512) return;
+  if(channel > 512 || channel == 0) return;
   dmx2Stream[channel] = value & 0xff;
 }
 
@@ -211,7 +212,7 @@ void dmx3SetDirection(eDmxDirection dir)
 
 void dmx3SetChannel(uint16_t channel, uint8_t value)
 {
-  if(channel > 512) return;
+  if(channel > 512 || channel == 0) return;
   dmx3Stream[channel] = value & 0xff;
 }
 
@@ -240,4 +241,28 @@ void dmx3ProcessTransferComplete(UARTDriver *uart)
   };
 }
 
+// Functions used by USB to update the DMX Stream or read from
 
+uint8_t dmxUpdate(uint8_t *data, uint8_t len)
+{
+  // First array item is the Port ( 1 based, so 1, 2 or 3 )
+  if(data[0] < 1 || data[0] > 3)
+    return 1;
+
+  // Data needs to be divisible by 2, as it's chn/value pairs
+  if( (len - 1) % 2 != 0 )
+    return 1;
+
+  int i;
+  for(i = 1; i < (len -1); i += 2)
+  {
+    if(data[0] == 1)
+      dmx1SetChannel(data[i], data[i + 1]);
+    else if(data[0] == 2)
+      dmx2SetChannel(data[i], data[i + 1]);
+    else if(data[0] == 3)
+      dmx3SetChannel(data[i], data[i + 1]);
+  }
+
+  return 0;
+}

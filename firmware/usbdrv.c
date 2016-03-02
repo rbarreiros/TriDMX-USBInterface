@@ -12,6 +12,8 @@ SerialUSBDriver SDU1;
 #define USBD1_DATA_REQUEST_EP           1
 #define USBD1_DATA_AVAILABLE_EP         1
 
+bool gDoShutdown = 0;
+
 struct usb_request {
   uint8_t  bmRequestType;
   uint8_t  bRequest;
@@ -292,8 +294,7 @@ static bool request_hook(USBDriver *usbp)
 
   switch (rq->wIndex) {
     case 0:
-      SCB->AIRCR = (0x5FA << SCB_AIRCR_VECTKEY_Pos) |
-          SCB_AIRCR_SYSRESETREQ;
+      gDoShutdown = 1;
       return true;
     default:
       return false;

@@ -1,6 +1,6 @@
 
 #include <stdio.h>
-//#include <libusb-1.0/libusb.h>
+#include <libusb-1.0/libusb.h>
 
 #define USB_VENDOR_ID  0x0483
 #define USB_PRODUCT_ID 0xFEDC
@@ -8,8 +8,8 @@
 #define USB_ENDPOINT_OUT (LIBUSB_ENDPOINT_OUT | 1)   /* endpoint address */
 
 //Global variables:
-//struct libusb_device_handle *devh = NULL;
-//static libusb_context *ctx = NULL;
+struct libusb_device_handle *devh = NULL;
+static libusb_context *ctx = NULL;
 
 enum {
   out_deinit,
@@ -22,10 +22,8 @@ int main(void)
   int r = 1;  // result
   int i;
 
-  printf("DEBUG\n");
-
   //init libUSB
-  /*
+
   r = libusb_init(&ctx);
   if (r < 0) {
     fprintf(stderr, "Failed to initialise libusb\n");
@@ -50,8 +48,24 @@ int main(void)
   } else  {
     printf("Claimed interface\n");
     int n = 0;
-    unsigned char tmp[5] = {0xAF, 0xEB, 0xA5, 0x05, 0x44};
-    r = libusb_bulk_transfer(devh, USB_ENDPOINT_OUT, &tmp, 5, &n, 3000);
+
+    /*
+    unsigned char tmp[63] = {0};
+
+    tmp[0] = 0x10;
+    tmp[1] = 63;
+    tmp[2] = 0x01;
+    
+    for(int i = 3; i < 63 ; i += 2)
+    {
+      tmp[i - 2] = i - 2;
+    }
+    */
+
+    unsigned char tmp[7] = { 0x10, 7, 0x01, 1, 1, 2, 2 };
+    
+    
+    r = libusb_bulk_transfer(devh, USB_ENDPOINT_OUT, tmp, 7, &n, 25);
     switch(r){
       case 0:
         printf("send %d bytes to device\n", n);
@@ -73,21 +87,29 @@ int main(void)
         break;
     }
 
-    uint8_t buff[64] = {0};
-    r = libusb_bulk_transfer(devh, USB_ENDPOINT_IN, &buff, 64, &n, 3000);
-    if(r != 0)
+    
+    uint8_t buff[2] = {0};
+    r = libusb_bulk_transfer(devh, USB_ENDPOINT_IN, buff, 2, &n, 25);
+    if(r == 0)
     {
-      for(int i = 0; i < 64; i++)
-      {
-        printf("%02x", buff[i]);
-      }
+      for(int i = 0; i < 2; i++)
+        printf("0x%02x ", buff[i]);
       printf("\n");
     }
+ 
+    r = libusb_bulk_transfer(devh, USB_ENDPOINT_IN, buff, 2, &n, 25);
+    if(r == 0)
+    {
+      for(int i = 0; i < 2; i++)
+        printf("0x%02x ", buff[i]);
+      printf("\n");
+    }
+
   }
 
   libusb_release_interface(devh, 0);
   libusb_close(devh);
   libusb_exit(NULL);
-*/
+
   return 0;
 }
