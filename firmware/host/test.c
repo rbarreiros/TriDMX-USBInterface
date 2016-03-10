@@ -62,10 +62,9 @@ int main(void)
     }
     */
 
-    unsigned char tmp[7] = { 0x10, 7, 0x01, 1, 1, 2, 2 };
+    unsigned char tmp[5] = { 0x10, 5, 0x01, 2, 5 };
     
-    
-    r = libusb_bulk_transfer(devh, USB_ENDPOINT_OUT, tmp, 7, &n, 25);
+    r = libusb_bulk_transfer(devh, USB_ENDPOINT_OUT, tmp, sizeof(tmp), &n, 25);
     switch(r){
       case 0:
         printf("send %d bytes to device\n", n);
@@ -86,9 +85,17 @@ int main(void)
         printf("ERROR in bulk write: %d\n", r);
         break;
     }
-
     
-    uint8_t buff[2] = {0};
+    uint8_t buff[1] = {0};
+    r = libusb_bulk_transfer(devh, USB_ENDPOINT_IN, buff, sizeof(buff), &n, 25);
+    if(r == 0)
+    {
+      for(int i = 0; i < sizeof(buff); i++)
+        printf("0x%02x ", buff[i]);
+      printf("\n");
+    }
+
+    /*
     r = libusb_bulk_transfer(devh, USB_ENDPOINT_IN, buff, 2, &n, 25);
     if(r == 0)
     {
@@ -96,14 +103,7 @@ int main(void)
         printf("0x%02x ", buff[i]);
       printf("\n");
     }
- 
-    r = libusb_bulk_transfer(devh, USB_ENDPOINT_IN, buff, 2, &n, 25);
-    if(r == 0)
-    {
-      for(int i = 0; i < 2; i++)
-        printf("0x%02x ", buff[i]);
-      printf("\n");
-    }
+    */
 
   }
 

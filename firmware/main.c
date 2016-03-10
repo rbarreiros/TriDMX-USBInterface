@@ -102,13 +102,15 @@ int __attribute__((noreturn)) main(void) {
     // Start DMX Streams
     dmx1Init();
     dmx1Start();
-    
+
+    /*
     dmx2Init();
     dmx2Start();
     
     dmx3Init();
     dmx3Start();
-
+    */
+    
     // Start USB Thread
     thread_t *usbThread = chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
     
@@ -123,8 +125,8 @@ int __attribute__((noreturn)) main(void) {
     
     // Stop all DMX
     dmx1Stop();
-    dmx2Stop();
-    dmx3Stop();
+    //dmx2Stop();
+    //dmx3Stop();
     
     // Stop USB Thread
     chThdTerminate(usbThread);

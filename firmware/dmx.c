@@ -21,16 +21,16 @@ UARTConfig uart1Cfg = {
   0, // cr3 register values
 };
 
-UARTConfig uart2Cfg = { NULL, NULL, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 };
-UARTConfig uart3Cfg = { NULL, NULL, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 };
+//UARTConfig uart2Cfg = { NULL, NULL, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 };
+//UARTConfig uart3Cfg = { NULL, NULL, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 };
 
 uint8_t dmx1Stream[DMX_BUFFER_SIZE] = {0};
-uint8_t dmx2Stream[DMX_BUFFER_SIZE] = {0};
-uint8_t dmx3Stream[DMX_BUFFER_SIZE] = {0};
+//uint8_t dmx2Stream[DMX_BUFFER_SIZE] = {0};
+//uint8_t dmx3Stream[DMX_BUFFER_SIZE] = {0};
 
 uint8_t dmx1Status = 0;
-uint8_t dmx2Status = 0;
-uint8_t dmx3Status = 0;
+//uint8_t dmx2Status = 0;
+//uint8_t dmx3Status = 0;
 
 uint16_t dmxBRR = 0, brkBRR = 0;
 
@@ -104,7 +104,7 @@ void dmx1ProcessTransferComplete(UARTDriver *uart)
 }
 
 // UART 2 - PA2, PA3
-
+/*
 void dmx2Init(void)
 {
   dmx2Status = BREAK;
@@ -240,7 +240,7 @@ void dmx3ProcessTransferComplete(UARTDriver *uart)
       break;
   };
 }
-
+*/
 // Functions used by USB to update the DMX Stream or read from
 
 uint8_t dmxUpdate(uint8_t *data, uint8_t len)
@@ -258,10 +258,10 @@ uint8_t dmxUpdate(uint8_t *data, uint8_t len)
   {
     if(data[0] == 1)
       dmx1SetChannel(data[i], data[i + 1]);
-    else if(data[0] == 2)
-      dmx2SetChannel(data[i], data[i + 1]);
-    else if(data[0] == 3)
-      dmx3SetChannel(data[i], data[i + 1]);
+    //else if(data[0] == 2)
+      //dmx2SetChannel(data[i], data[i + 1]);
+    //else if(data[0] == 3)
+      //dmx3SetChannel(data[i], data[i + 1]);
   }
 
   return 0;

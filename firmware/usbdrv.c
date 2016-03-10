@@ -2,6 +2,11 @@
 #include <hal.h>
 #include <serial_usb.h>
 
+#define USB_VID 0x0483
+#define USB_PID 0xFEDC
+
+//#define USB_VID 0x2012
+//#define USB_PID 0x1029
 
 /* Virtual serial port over USB.*/
 SerialUSBDriver SDU1;
@@ -31,8 +36,8 @@ static const uint8_t vcom_device_descriptor_data[18] = {
                          0x00,          /* bDeviceSubClass.                 */
                          0x00,          /* bDeviceProtocol.                 */
                          0x40,          /* bMaxPacketSize.                  */
-                         0x0483,        /* idVendor (ST).                   */
-                         0xFEDC,        /* idProduct.                       */
+                         USB_VID,       /* idVendor (ST).                   */
+                         USB_PID,       /* idProduct.                       */
                          0x0200,        /* bcdDevice.                       */
                          1,             /* iManufacturer.                   */
                          2,             /* iProduct.                        */

@@ -38,7 +38,7 @@ uint8_t usbProtoReadCmd(BaseChannel *chn)
       break;
   }
 
-  //chnPutTimeout(chn, MASK_REPLY_OK, MS2ST(25));
+  chnPutTimeout(chn, MASK_REPLY_OK, MS2ST(25));
 
   return 0;
 }

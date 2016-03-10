@@ -14,7 +14,7 @@ typedef enum
 } eDmxState;
 
 #define DMX_BUFFER_SIZE 513
-#define DMX_BAUDRATE    250000
+#define DMX_BAUDRATE    375000
 #define BREAK_BAUDRATE  90000
 
 #define DMX1_GPIO_BANK GPIOC
