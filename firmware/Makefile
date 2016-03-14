@@ -94,7 +94,7 @@ OS := $(shell uname)
 
 # Imported source files and paths
 ifeq ($(OS),Darwin)
-CHIBIOS = ../ChibiOS
+CHIBIOS = ../../ChibiOS
 else
 CHIBIOS = /home/rbarreiros/Projectos/Electronica/stm32/ChibiOS
 endif
@@ -245,4 +245,3 @@ $(BUILD_NUMBER_FILE): $(CSRC)
 boot: build/$(PROJECT).bin
 	#(sudo ./tools/usbtool -v 0x0483 -p 0xfedc control out vendor device 0 0 0; sleep 1) || true
 	sudo dfu-util -d 0483:df11 -a 0 -s $(LOAD_ADDRESS):leave -D build/$(PROJECT).bin
-

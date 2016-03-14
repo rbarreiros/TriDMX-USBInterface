@@ -1,6 +1,23 @@
 #ifndef __DMX_H__
 #define __DMX_H__
 
+#define DMX_BUFFER_SIZE 513
+#define DMX_BAUDRATE    375000
+#define BREAK_BAUDRATE  90000
+
+#define DMX1_GPIO_BANK GPIOC
+#define DMX1_LED       13
+
+#define DMX1_DIR_GPIO  GPIOC
+#define DMX1_DIR_PIN   1
+
+typedef struct {
+  UARTDriver *driver;
+  ioportid_t port;
+  uint8_t pad_tx;
+  uint8_t pad_rx;
+} DMXConfig;
+
 typedef enum
 {
   DMX_IN,
@@ -13,15 +30,23 @@ typedef enum
   IDLE
 } eDmxState;
 
-#define DMX_BUFFER_SIZE 513
-#define DMX_BAUDRATE    375000
-#define BREAK_BAUDRATE  90000
+extern THD_WORKING_AREA(waDmxThread, 2048);
+THD_FUNCTION(dmxThread, arg);
 
-#define DMX1_GPIO_BANK GPIOC
-#define DMX1_LED       13
 
-#define DMX1_DIR_GPIO  GPIOC
-#define DMX1_DIR_PIN   1
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void dmx1Init(void);
 void dmx2Init(void);

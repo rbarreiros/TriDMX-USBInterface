@@ -3,6 +3,85 @@
 #include "dmx.h"
 #include "usbdrv.h"
 
+uint16_t dmxBRR = 0, brkBRR = 0;
+
+THD_WORKING_AREA(waDmxThread, 2048);
+THD_FUNCTION(dmxThread, arg)
+{
+  DMXConfig *dmxCfg = (DMXConfig*) arg;
+  eDmxState dmxStatus;
+  uint8_t dmxStream[DMX_BUFFER_SIZE] = {0};
+
+  void dmxProcessTransferComplete(UARTDriver *uart)
+  {
+    switch(dmxStatus)
+    {
+      case BREAK: // Break finished, send DMX Stream
+        dmxStatus = IDLE;
+
+        uart->usart->BRR = dmxBRR;
+        chSysLockFromISR();
+        uartStartSendI(uart, DMX_BUFFER_SIZE, dmxStream);
+        chSysUnlockFromISR();
+
+        //palTogglePad(DMX1_GPIO_BANK, DMX1_LED); // DMX 1 Led Togle
+        break;
+      case IDLE:  // Finished sending stream, send break
+        dmxStatus = BREAK;
+
+        uart->usart->BRR = brkBRR;
+        chSysLockFromISR();
+        uartStartSendI(uart, 1, 0x00);
+        chSysUnlockFromISR();
+        break;
+    };
+  }
+
+  dmxStatus = BREAK;
+
+  // Force pal mode here, ignore the board.h/board.c
+  palSetPadMode(dmxCfg->port, dmxCfg->pad_tx, PAL_MODE_STM32_ALTERNATE_PUSHPULL);
+  palSetPadMode(dmxCfg->port, dmxCfg->pad_rx, PAL_MODE_INPUT);
+
+  UARTConfig uartCfg = {
+    NULL,   // End of Transmission buffer Callback
+    NULL,   // Physical end of transmission callback
+    NULL,   // Received buffer filled callback
+    NULL,   // Char received while out of the UART_RECEIVE state (to use when receiving dmx)
+    NULL,   // Receive error callback
+    DMX_BAUDRATE, // Baudrate
+    0, // cr1 register values
+    USART_CR2_STOP_1, // cr2 register values
+    0, // cr3 register values
+  };
+
+  uartStart(dmxCfg->driver, &uartCfg);
+  if(dmxBRR == 0) dmxBRR = dmxCfg->driver->usart->BRR;
+
+  uartCfg.speed = BREAK_BAUDRATE;
+  uartStart(dmxCfg->driver, &uartCfg);
+  if(brkBRR == 0) brkBRR = dmxCfg->driver->usart->BRR;
+
+  uartStop(dmxCfg->driver);
+
+  uartCfg.txend2_cb = &dmxProcessTransferComplete;
+  uartStart(dmxCfg->driver, &uartCfg);
+  uartStartSend(dmxCfg->driver, 1, 0x00);
+
+  while(!chThdShouldTerminateX())
+  {
+    chThdSleepMilliseconds(5);
+  }
+
+  uartCfg.txend2_cb = NULL;
+  uartStop(dmxCfg->driver);
+}
+
+
+
+
+
+/*
 void dmx1ProcessTransferComplete(UARTDriver *uart);
 void dmx2ProcessTransferComplete(UARTDriver *uart);
 void dmx3ProcessTransferComplete(UARTDriver *uart);
@@ -89,7 +168,7 @@ void dmx1ProcessTransferComplete(UARTDriver *uart)
       chSysLockFromISR();
       uartStartSendI(uart, DMX_BUFFER_SIZE, dmx1Stream);
       chSysUnlockFromISR();
-      
+
       //palTogglePad(DMX1_GPIO_BANK, DMX1_LED); // DMX 1 Led Togle
       break;
     case IDLE:  // Finished sending stream, send break
@@ -102,7 +181,7 @@ void dmx1ProcessTransferComplete(UARTDriver *uart)
       break;
   };
 }
-
+*/
 // UART 2 - PA2, PA3
 /*
 void dmx2Init(void)
@@ -112,7 +191,7 @@ void dmx2Init(void)
   // Force pal mode here, ignore the board.h/board.c
   palSetPadMode(GPIOA, 2, PAL_MODE_STM32_ALTERNATE_PUSHPULL);
   palSetPadMode(GPIOA, 3, PAL_MODE_INPUT);
-  
+
   uartStart(&UARTD2, &uart2Cfg);
   if(dmxBRR == 0) dmxBRR = UARTD2.usart->BRR;
 
@@ -158,7 +237,7 @@ void dmx2ProcessTransferComplete(UARTDriver *uart)
       chSysLockFromISR();
       uartStartSendI(uart, DMX_BUFFER_SIZE, dmx2Stream);
       chSysUnlockFromISR();
-      
+
       //palTogglePad(DMX2_GPIO_BANK, DMX2_LED); // DMX 2 Led Togle
       break;
     case IDLE:  // Finished sending stream, send break
@@ -181,7 +260,7 @@ void dmx3Init(void)
   // Force pal mode here, ignore the board.h/board.c
   palSetPadMode(GPIOB, 10, PAL_MODE_STM32_ALTERNATE_PUSHPULL);
   palSetPadMode(GPIOB, 11, PAL_MODE_INPUT);
-  
+
   uartStart(&UARTD3, &uart3Cfg);
   if(dmxBRR == 0) dmxBRR = UARTD3.usart->BRR;
 
@@ -242,7 +321,7 @@ void dmx3ProcessTransferComplete(UARTDriver *uart)
 }
 */
 // Functions used by USB to update the DMX Stream or read from
-
+/*
 uint8_t dmxUpdate(uint8_t *data, uint8_t len)
 {
   // First array item is the Port ( 1 based, so 1, 2 or 3 )
@@ -266,3 +345,4 @@ uint8_t dmxUpdate(uint8_t *data, uint8_t len)
 
   return 0;
 }
+*/

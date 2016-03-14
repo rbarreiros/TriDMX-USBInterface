@@ -30,7 +30,7 @@ static THD_FUNCTION(Thread2, arg)
 {
   event_listener_t el1;
   eventflags_t flags;
-  
+
   (void)arg;
   chRegSetThreadName("USB");
 
@@ -39,7 +39,7 @@ static THD_FUNCTION(Thread2, arg)
    */
   sduObjectInit(&SDU1);
   sduStart(&SDU1, &serusbcfg);
-  
+
   /*
    * Activates the USB driver and then the USB bus pull-up on D+.
    * Note, a delay is inserted in order to not have to disconnect the cable
@@ -51,7 +51,7 @@ static THD_FUNCTION(Thread2, arg)
   usbConnectBus(serusbcfg.usbp);
 
   chEvtRegisterMask(chnGetEventSource(&SDU1), &el1, ALL_EVENTS);
-  
+
   while(USBD1.state != USB_READY) chThdSleepMilliseconds(10);
   while(SDU1.state != SDU_READY) chThdSleepMilliseconds(10);
 
@@ -85,72 +85,82 @@ static THD_FUNCTION(Thread2, arg)
   palSetPadMode(GPIOA, 12, PAL_MODE_INPUT);
   chThdSleepMilliseconds(500);
   */
-  
+
   return;
-}  
+}
 
 
 /*
  * Application entry point.
  */
 int __attribute__((noreturn)) main(void) {
+
+  DMXConfig dmx1Config = { &UARTD1, GPIOA, 9, 10 };
+  DMXConfig dmx2Config = { &UARTD2, GPIOA, 2, 3 };
+  DMXConfig dmx3Config = { &UARTD3, GPIOB, 10, 11 };
+
+  thread_t *usbThread, *dmx1Thread, *dmx2Thread, *dmx3Thread;
+
   while(TRUE)
   {
     halInit();
     chSysInit();
 
-    // Start DMX Streams
-    dmx1Init();
-    dmx1Start();
-
-    /*
-    dmx2Init();
-    dmx2Start();
-    
-    dmx3Init();
-    dmx3Start();
-    */
-    
     // Start USB Thread
-    thread_t *usbThread = chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
-    
+    usbThread = chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
+
+    // Start the 1st DMX thread
+    dmx1Thread = chThdCreateStatic(waDmxThread, sizeof(waDmxThread),
+    NORMALPRIO + 1, dmxThread, &dmx1Config);
+
+    // Start the 2nd DMX thread
+    dmx2Thread = chThdCreateStatic(waDmxThread, sizeof(waDmxThread),
+    NORMALPRIO + 1, dmxThread, &dmx2Config);
+
+    // Start the 3rd DMX thread
+    dmx3Thread = chThdCreateStatic(waDmxThread, sizeof(waDmxThread),
+    NORMALPRIO + 1, dmxThread, &dmx3Config);
+
     while (!gDoShutdown) {
       chThdSleepMilliseconds(1000);
     }
 
     // Shutdown and reset
-    
+
     // Wait a bit before shutting everything down
     chThdSleepMilliseconds(500);
-    
-    // Stop all DMX
-    dmx1Stop();
-    //dmx2Stop();
-    //dmx3Stop();
-    
+
+    // Stop DMX Thread
+    chThdTerminate(dmx1Thread);
+    chThdWait(dmx1Thread);
+    chThdTerminate(dmx2Thread);
+    chThdWait(dmx2Thread);
+    chThdTerminate(dmx3Thread);
+    chThdWait(dmx3Thread);
+
     // Stop USB Thread
     chThdTerminate(usbThread);
     chThdWait(usbThread);
-    
+
     chSysDisable();
     chSysEnable();
     chSysDisable();
-    
+
     RCC->CIR; // Disable ALL Interrupts
     SysTick->CTRL = 0;
     SysTick->LOAD = 0;
     SysTick->VAL = 0;
-    
+
     // Disable
     rccDisablePWRInterface(FALSE);
     rccDisableBKPInterface(FALSE);
-    
+
     // Reset All peripherals
     rccResetAPB1(0xFFFFFFFF);
     rccResetAPB2(0xFFFFFFFF);
-    
+
     RCC->CFGR = 0;
-    
+
     //SCB->AIRCR = (0x5FA << SCB_AIRCR_VECTKEY_Pos) |
     //    SCB_AIRCR_SYSRESETREQ;
     NVIC_SystemReset();
