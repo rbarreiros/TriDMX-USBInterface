@@ -31,8 +31,9 @@ static THD_FUNCTION(Thread2, arg)
   event_listener_t el1;
   eventflags_t flags;
 
-  (void)arg;
   chRegSetThreadName("USB");
+  
+  (void)arg;
 
   /*
    * Initializes a Bulk USB driver.
@@ -85,7 +86,7 @@ static THD_FUNCTION(Thread2, arg)
   palSetPadMode(GPIOA, 12, PAL_MODE_INPUT);
   chThdSleepMilliseconds(500);
   */
-
+  
   return;
 }
 
@@ -93,36 +94,33 @@ static THD_FUNCTION(Thread2, arg)
 /*
  * Application entry point.
  */
-int __attribute__((noreturn)) main(void) {
-
-  DMXConfig dmx1Config = { &UARTD1, GPIOA, 9, 10 };
-  DMXConfig dmx2Config = { &UARTD2, GPIOA, 2, 3 };
-  DMXConfig dmx3Config = { &UARTD3, GPIOB, 10, 11 };
-
-  thread_t *usbThread, *dmx1Thread, *dmx2Thread, *dmx3Thread;
-
+//int __attribute__((noreturn)) main(void) {
+int main(void) {
+  thread_t *usbThread;
+  
   while(TRUE)
   {
     halInit();
     chSysInit();
-
+    
+    DMXConfig dmx1Config = { 0, &UARTD1, { GPIOA, 9, 10 }, {GPIOA, 11 }, { GPIOC, 13 }, { GPIOA, 14 } };
+    DMXConfig dmx2Config = { 1, &UARTD2, { GPIOA, 2, 3 }, { GPIOA, 4 }, { GPIOA, 5}, { GPIOA, 6} };
+    DMXConfig dmx3Config = { 2, &UARTD3, { GPIOB, 10, 11 }, { GPIOB, 12 }, { GPIOB, 13 }, { GPIOB, 14} };
+    
     // Start USB Thread
     usbThread = chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
 
-    // Start the 1st DMX thread
-    dmx1Thread = chThdCreateStatic(waDmxThread, sizeof(waDmxThread),
-    NORMALPRIO + 1, dmxThread, &dmx1Config);
+    dmxInit(&dmx1Config);
+    dmxStart(&dmx1Config);
 
-    // Start the 2nd DMX thread
-    dmx2Thread = chThdCreateStatic(waDmxThread, sizeof(waDmxThread),
-    NORMALPRIO + 1, dmxThread, &dmx2Config);
+    dmxInit(&dmx2Config);
+    dmxStart(&dmx2Config);
 
-    // Start the 3rd DMX thread
-    dmx3Thread = chThdCreateStatic(waDmxThread, sizeof(waDmxThread),
-    NORMALPRIO + 1, dmxThread, &dmx3Config);
-
+    dmxInit(&dmx3Config);
+    dmxStart(&dmx3Config);
+    
     while (!gDoShutdown) {
-      chThdSleepMilliseconds(1000);
+      chThdSleepMilliseconds(10);
     }
 
     // Shutdown and reset
@@ -130,23 +128,19 @@ int __attribute__((noreturn)) main(void) {
     // Wait a bit before shutting everything down
     chThdSleepMilliseconds(500);
 
-    // Stop DMX Thread
-    chThdTerminate(dmx1Thread);
-    chThdWait(dmx1Thread);
-    chThdTerminate(dmx2Thread);
-    chThdWait(dmx2Thread);
-    chThdTerminate(dmx3Thread);
-    chThdWait(dmx3Thread);
-
     // Stop USB Thread
     chThdTerminate(usbThread);
     chThdWait(usbThread);
 
+    dmxStop(&dmx1Config);
+    dmxStop(&dmx2Config);
+    dmxStop(&dmx3Config);
+    
     chSysDisable();
     chSysEnable();
     chSysDisable();
 
-    RCC->CIR; // Disable ALL Interrupts
+    //RCC->CIR; // Disable ALL Interrupts
     SysTick->CTRL = 0;
     SysTick->LOAD = 0;
     SysTick->VAL = 0;

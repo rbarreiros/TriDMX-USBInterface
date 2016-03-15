@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <libusb-1.0/libusb.h>
+#include <string.h>
 
 #define USB_VENDOR_ID  0x0483
 #define USB_PRODUCT_ID 0xFEDC
@@ -48,62 +49,90 @@ int main(void)
   } else  {
     printf("Claimed interface\n");
     int n = 0;
-
-    /*
-    unsigned char tmp[63] = {0};
-
-    tmp[0] = 0x10;
-    tmp[1] = 63;
-    tmp[2] = 0x01;
+    int port = 3;
+    unsigned char data[512] = {0};
+    uint8_t started = 0;
     
-    for(int i = 3; i < 63 ; i += 2)
+    for(int i = 0, j = 1; i < sizeof(data); i++, j++)
     {
-      tmp[i - 2] = i - 2;
-    }
-    */
-
-    unsigned char tmp[5] = { 0x10, 5, 0x01, 2, 5 };
-    
-    r = libusb_bulk_transfer(devh, USB_ENDPOINT_OUT, tmp, sizeof(tmp), &n, 25);
-    switch(r){
-      case 0:
-        printf("send %d bytes to device\n", n);
-        break;
-      case LIBUSB_ERROR_TIMEOUT:
-        printf("ERROR in bulk write: %d Timeout\n", r);
-        break;
-      case LIBUSB_ERROR_PIPE:
-        printf("ERROR in bulk write: %d Pipe\n", r);
-        break;
-      case LIBUSB_ERROR_OVERFLOW:
-        printf("ERROR in bulk write: %d Overflow\n", r);
-        break;
-      case LIBUSB_ERROR_NO_DEVICE:
-        printf("ERROR in bulk write: %d No Device\n", r);
-        break;
-      default:
-        printf("ERROR in bulk write: %d\n", r);
-        break;
-    }
-    
-    uint8_t buff[1] = {0};
-    r = libusb_bulk_transfer(devh, USB_ENDPOINT_IN, buff, sizeof(buff), &n, 25);
-    if(r == 0)
-    {
-      for(int i = 0; i < sizeof(buff); i++)
-        printf("0x%02x ", buff[i]);
-      printf("\n");
+      if(j > 255) j = 1;
+      data[i] = j;
     }
 
-    /*
-    r = libusb_bulk_transfer(devh, USB_ENDPOINT_IN, buff, 2, &n, 25);
-    if(r == 0)
+    int sizeLeft = sizeof(data);
+    while(sizeLeft)
     {
-      for(int i = 0; i < 2; i++)
-        printf("0x%02x ", buff[i]);
-      printf("\n");
+      if(sizeLeft > 60)
+      {
+        unsigned char tmp[63] = {0};
+
+        tmp[0] = (started == 0) ? 0x11 : 0x12;
+        tmp[1] = sizeof(tmp);
+        tmp[2] = port;
+        
+        int start = sizeof(data) - sizeLeft;
+        memcpy( &tmp[3], &data[start], 60);
+        r = libusb_bulk_transfer(devh, USB_ENDPOINT_OUT, tmp, sizeof(tmp), &n, 25);        
+        sizeLeft -= 60;
+        started = 1;
+        
+        for(int i = 0; i < sizeof(tmp); i++)
+          printf("0x%02x ", tmp[i]);
+        printf("\n");
+        
+      } else {
+        unsigned char tmp[sizeLeft + 3];
+        memset(tmp, 0, sizeof(tmp));
+
+        tmp[0] = (started == 0) ? 0x11 : 0x12;
+        tmp[1] = sizeof(tmp);
+        tmp[2] = port;
+
+        int start = sizeof(data) - sizeLeft;
+        memcpy(&tmp[3], &data[start], sizeLeft);
+        r = libusb_bulk_transfer(devh, USB_ENDPOINT_OUT, tmp, sizeof(tmp), &n, 25);
+        sizeLeft = 0;
+        started = 0;
+        
+        for(int i = 0; i < sizeof(tmp); i++)
+          printf("0x%02x ", tmp[i]);
+        printf("\n");
+      }
+      
+      switch(r){
+        case 0:
+          printf("send %d bytes to device\n", n);
+          //for(int i = 0; i < sizeof(tmp); i++)
+          //printf("0x%02x ", tmp[i]);
+          //printf("\n");
+          break;
+        case LIBUSB_ERROR_TIMEOUT:
+          printf("ERROR in bulk write: %d Timeout\n", r);
+          break;
+        case LIBUSB_ERROR_PIPE:
+          printf("ERROR in bulk write: %d Pipe\n", r);
+          break;
+        case LIBUSB_ERROR_OVERFLOW:
+          printf("ERROR in bulk write: %d Overflow\n", r);
+          break;
+        case LIBUSB_ERROR_NO_DEVICE:
+          printf("ERROR in bulk write: %d No Device\n", r);
+          break;
+        default:
+          printf("ERROR in bulk write: %d\n", r);
+          break;
+      }
+      
+      uint8_t buff[1] = {0};
+      r = libusb_bulk_transfer(devh, USB_ENDPOINT_IN, buff, sizeof(buff), &n, 25);
+      if(r == 0)
+      {
+        for(int i = 0; i < sizeof(buff); i++)
+          printf("0x%02x ", buff[i]);
+        printf("\n");
+      }
+      
     }
-    */
 
   }
 

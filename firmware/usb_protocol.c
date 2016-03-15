@@ -23,15 +23,19 @@ uint8_t usbProtoReadCmd(BaseChannel *chn)
     return MASK_ERR_WRONG_DATA_SIZE;
   }
 
-  //uint8_t status = 0;
+  uint8_t status = 0;
   switch(cmd[0])
   {
     case CMD_DMX_OUT_UPDATE:
-      //status = dmxUpdate(data, cmd[1] - 2);
-      //if(status != 0) chnPutTimeout(chn, err | MASK_ERR_DMX_OUT_UPDATE, MS2ST(25));
+      status = dmxUpdate(data, cmd[1] - 2);
+      if(status != 0) chnPutTimeout(chn, err | MASK_ERR_DMX_OUT_UPDATE, MS2ST(25));
       break;
 
     case CMD_DMX_OUT_STREAM:
+    case CMD_DMX_OUT_STRCONT:
+      status = dmxSetStream(data, cmd[1] - 2, (cmd[0] == CMD_DMX_OUT_STREAM) ? 1 : 0);
+      if(status != 0) chnPutTimeout(chn, err | MASK_ERR_DMX_OUT_STREAM, MS2ST(25));
+      //chnPutTimeout(chn, status, MS2ST(25));
       break;
 
     case CMD_NOP:

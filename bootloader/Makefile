@@ -66,9 +66,9 @@ endif
 
 # ----- Rules -----------------------------------------------------------------
 
-.PHONY:		all clean
+.PHONY:	all clean
 
-all:		$(NAME)_text.bin $(NAME)_text.hex
+all: $(NAME)_text.bin $(NAME)_text.hex
 
 $(NAME).elf: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
@@ -83,22 +83,22 @@ $(NAME).elf: $(OBJS)
 # ----- Cleanup ---------------------------------------------------------------
 
 clean:
-		rm -f $(NAME).bin $(NAME).elf $(NAME).hex
-		rm -f $(NAME)_text.{bin,hex}
-		rm -f $(OBJS) $(OBJS:.o=.d)
-		rm -f *~
+	rm -f $(NAME).bin $(NAME).elf $(NAME).hex
+	rm -f $(NAME)_text.{bin,hex}
+	rm -f $(OBJS) $(OBJS:.o=.d)
+	rm -f *~
 
 # ----- Dependencies ----------------------------------------------------------
 
-MKDEP =									\
-	$(DEPEND) $< |							\
-	  sed 								\
-	    -e 's|^$(basename $(notdir $<)).o:|$@:|'			\
-	    -e '/^\(.*:\)\? */{p;s///;s/ *\\\?$$/ /;s/  */:\n/g;H;}'	\
-	    -e '$${g;p;}'						\
-	    -e d >$(basename $@).d;					\
-	  [ "$${PIPESTATUS[*]}" = "0 0" ] ||				\
-	  { rm -f $(basename $@).d; exit 1; }
+#MKDEP =	\
+#	$(DEPEND) $< | \
+#	  sed \
+#	    -e 's|^$(basename $(notdir $<)).o:|$@:|' \
+#	    -e '/^\(.*:\)\? */{p;s///;s/ *\\\?$$/ /;s/  */:\n/g;H;}' \
+#	    -e '$${g;p;}' \
+#	    -e d >$(basename $@).d; \
+#	  [ "$${PIPESTATUS[*]}" = "0 0" ] || \
+#	  { rm -f $(basename $@).d; exit 1; }
 
 %.o: %.c
 	$(CC) $(CFLAGS) -Os -c $< -o $@
@@ -113,9 +113,6 @@ MKDEP =									\
 # ----- Programming and device control ----------------------------------------
 
 .PHONY: load fuse boot
-
-fuse:
-	$(AVRDUDE) $(AVRDUDEFLAGS) -U lfuse:w:$(LFUSE):m -U hfuse:w:$(HFUSE):m
 
 boot: $(NAME)_text.bin
 	$(BOOTLOADER) $(BOOTLOADER_FLAGS)

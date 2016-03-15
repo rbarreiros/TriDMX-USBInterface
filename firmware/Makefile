@@ -3,14 +3,18 @@
 # NOTE: Can be overridden externally.
 #
 
+# En/disable usage of maplemini bootloader support
+USE_BOOTLOADER ?= 0
+
 LOAD_ADDRESS = 0x08002000
+CORTEX_VTOR_INIT = 0x2000
 
 # Build Number
 BUILD = 1
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16 -DCORTEX_VTOR_INIT=$(LOAD_ADDRESS) -D__BUILD_NUMBER__=$(BUILD)
+  USE_OPT = -O2 -ggdb -fomit-frame-pointer -falign-functions=16 -DUSE_BOOTLOADER=${USE_BOOTLOADER}
 endif
 
 # C specific options here (added to USE_OPT).
@@ -115,13 +119,11 @@ include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 #include $(CHIBIOS)/os/various/shell/shell.mk
 
 # Define linker script file here
-#ifeq ($(USE_MAPLEMINI_BOOTLOADER),1)
-#  LDSCRIPT = $(STARTUPLD)/STM32F103xE_maplemini_bootloader.ld
-#else
-#  LDSCRIPT = $(STARTUPLD)/STM32F103xE.ld
-#endif
+ifeq ($(USE_BOOTLOADER),1)
   LDSCRIPT = STM32F103x8_bootloader.ld
-
+else
+  LDSCRIPT = $(STARTUPLD)/STM32F103x8.ld
+endif
 
 # C sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -217,7 +219,10 @@ CPPWARN = -Wall -Wextra -Wundef
 #
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS =
+UDEFS = -D__BUILD_NUMBER__=$(BUILD)
+ifeq ($(USE_BOOTLOADER),1)
+  UDEFS += -DCORTEX_VTOR_INIT=$(CORTEX_VTOR_INIT)
+endif
 
 # Define ASM defines here
 UADEFS =
@@ -227,6 +232,9 @@ UINCDIR =
 
 # List the user directory to look for the libraries here
 ULIBDIR =
+ifeq ($(USE_BOOTLOADER),1)
+  ULIBDIR += $(STARTUPLD)
+endif
 
 # List all user libraries here
 ULIBS =
@@ -245,3 +253,9 @@ $(BUILD_NUMBER_FILE): $(CSRC)
 boot: build/$(PROJECT).bin
 	#(sudo ./tools/usbtool -v 0x0483 -p 0xfedc control out vendor device 0 0 0; sleep 1) || true
 	sudo dfu-util -d 0483:df11 -a 0 -s $(LOAD_ADDRESS):leave -D build/$(PROJECT).bin
+
+flash: build/$(PROJECT).bin
+	sudo ./tools/flash.sh
+
+flashbootloader:
+	sudo ./tools/flashboot.sh

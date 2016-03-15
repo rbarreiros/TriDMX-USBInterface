@@ -19,7 +19,7 @@
 
 #define CMD_DMX_OUT_UPDATE  0x10 // [CMD] [LEN] [PORT] [CH] [VAL] ... [CH] [VAL] (for low channel count updates)
 #define CMD_DMX_OUT_STREAM  0x11 // [CMD] [LEN] [PORT] [CH1_VAL] [CH2_VAL] [CH3_VAL]  (First 512 channels)
-#define DMX_DMX_OUT_STRCONT 0x12 // [CMD] [LEN] [PORT] [CHN_VAL] ... (remaining 512 channels)
+#define CMD_DMX_OUT_STRCONT 0x12 // [CMD] [LEN] [PORT] [CHN_VAL] ... (remaining 512 channels)
 
 #define CMD_DMX_IN_UPDATE  0x13
 #define CMD_DMX_IN_STREAM  0x14
