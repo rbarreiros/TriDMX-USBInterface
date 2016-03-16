@@ -16,6 +16,7 @@
 #define CMD_NOP 0x00
 
 #define CMD_SET_MODE        0x01 // [CMD] [PORT] [MODE]
+#define CMD_GET_MODE        0x02 // [CMD] [PORT] returns DMXPortConfig struct
 
 #define CMD_DMX_OUT_UPDATE  0x10 // [CMD] [LEN] [PORT] [CH] [VAL] ... [CH] [VAL] (for low channel count updates)
 #define CMD_DMX_OUT_STREAM  0x11 // [CMD] [LEN] [PORT] [CH1_VAL] [CH2_VAL] [CH3_VAL]  (First 512 channels)
