@@ -41,6 +41,12 @@ int main(void)
     return 1;
   }
 
+  r = libusb_set_configuration(devh, 1);
+  if(r < 0) {
+    fprintf(stderr, "usb_claim_interface error %d\n", r);
+    goto clean_out;
+  }
+  
   //claim the interface
   r = libusb_claim_interface(devh, 0);
   if (r < 0) {
@@ -49,7 +55,7 @@ int main(void)
   } else  {
     printf("Claimed interface\n");
     int n = 0;
-    int port = 3;
+    int port = 2;
     unsigned char data[512] = {0};
     uint8_t started = 0;
     
@@ -136,6 +142,7 @@ int main(void)
 
   }
 
+clean_out:
   libusb_release_interface(devh, 0);
   libusb_close(devh);
   libusb_exit(NULL);

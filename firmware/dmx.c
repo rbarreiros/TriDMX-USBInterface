@@ -141,14 +141,14 @@ uint8_t dmxUpdate(uint8_t *data, uint8_t len)
 
 uint8_t dmxSetStream(uint8_t *data, uint8_t len, uint8_t start)
 {
-  if(data[0] < 1 || data[0] > 3) return 1;
+  if(data[0] > 2) return 1;
   int i;
   static int lastAddr = 1;
 
   if(start) lastAddr = 1;
   for(i = 1; i < len; i++)
   {
-    dmxStream[data[0] - 1][lastAddr++] = data[i] & 0xff;
+    dmxStream[data[0]][lastAddr++] = data[i] & 0xff;
     if(lastAddr > 513) return 1;
   }
 
