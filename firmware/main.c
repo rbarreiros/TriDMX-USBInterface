@@ -97,6 +97,8 @@ static THD_FUNCTION(Thread2, arg)
 //int __attribute__((noreturn)) main(void) {
 int main(void) {
   thread_t *usbThread;
+
+  Get_SerialNum();
   
   while(TRUE)
   {

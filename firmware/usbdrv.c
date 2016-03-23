@@ -2,8 +2,16 @@
 #include <hal.h>
 #include <serial_usb.h>
 
+// TODO - Change the VID/PID to proper values 
+
 #define USB_VID 0x0483
 #define USB_PID 0xFEDC
+
+// Location of STM32F1XX device unique ID
+
+#define         ID1          (0x1FFFF7E8)
+#define         ID2          (0x1FFFF7EC)
+#define         ID3          (0x1FFFF7F0)
 
 //#define USB_VID 0x2012
 //#define USB_PID 0x1029
@@ -26,6 +34,8 @@ struct usb_request {
   uint16_t wIndex;
   uint16_t wLength;
 };
+
+static void IntToUnicode (uint32_t value , uint8_t *pbuf , uint8_t len);
 
 /*
  * USB Device Descriptor.
@@ -103,25 +113,20 @@ static const uint8_t vcom_string0[] = {
  * Vendor string.
  */
 static const uint8_t vcom_string1[] = {
-  USB_DESC_BYTE(38),                    /* bLength.                         */
+  USB_DESC_BYTE(28),                    /* bLength.                         */
   USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
-  'S', 0,
-  'T', 0,
-  'M', 0,
+  'R', 0,
+  'u', 0,
   'i', 0,
-  'c', 0,
+  ' ', 0,
+  'B', 0,
+  'a', 0,
+  'r', 0,
+  'r', 0,
+  'e', 0,
+  'i', 0,
   'r', 0,
   'o', 0,
-  'e', 0,
-  'l', 0,
-  'e', 0,
-  'c', 0,
-  't', 0,
-  'r', 0,
-  'o', 0,
-  'n', 0,
-  'i', 0,
-  'c', 0,
   's', 0
 };
 
@@ -167,30 +172,25 @@ static const uint8_t vcom_string2[] = {
 /*
  * Serial Number string.
  */
-static const uint8_t vcom_string3[] = {
-  USB_DESC_BYTE(20),                     /* bLength.                         */
-  USB_DESC_BYTE(USB_DESCRIPTOR_STRING), /* bDescriptorType.                 */
-  '2', 0,
-  '0', 0,
-  '1', 0,
-  '6', 0,
-  '0', 0,
-  '3', 0,
-  '0', 0,
-  '1', 0,
-  '0' + __BUILD_NUMBER__, 0
+//static const uint8_t vcom_string3[] = {
+static uint8_t vcom_string3[] = {
+  USB_DESC_BYTE(28), // bLength.
+  USB_DESC_BYTE(USB_DESCRIPTOR_STRING),     // bDescriptorType.
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 /*
  * Strings wrappers array.
  */
+
 static const USBDescriptor vcom_strings[] = {
   {sizeof vcom_string0, vcom_string0},
   {sizeof vcom_string1, vcom_string1},
   {sizeof vcom_string2, vcom_string2},
   {sizeof vcom_string3, vcom_string3}
 };
-
+  
 /*
  * Handles the GET_DESCRIPTOR callback. All required descriptors must be
  * handled here.
@@ -327,3 +327,57 @@ const SerialUSBConfig serusbcfg = {
   USBD1_DATA_AVAILABLE_EP,
   0
 };
+
+// Function copied from STM32_USB_FS_Device_Lib
+
+/*******************************************************************************
+ * Function Name  : Get_SerialNum.
+ * Description    : Create the serial number string descriptor.
+ * Input          : None.
+ * Output         : None.
+ * Return         : None.
+ *******************************************************************************/
+void Get_SerialNum(void)
+{
+  uint32_t Device_Serial0, Device_Serial1, Device_Serial2;
+
+  Device_Serial0 = *(uint32_t*)ID1;
+  Device_Serial1 = *(uint32_t*)ID2;
+  Device_Serial2 = *(uint32_t*)ID3;
+
+  Device_Serial0 += Device_Serial2;
+
+  if (Device_Serial0 != 0)
+  {
+    IntToUnicode (Device_Serial0, &vcom_string3[2] , 8);
+    IntToUnicode (Device_Serial1, &vcom_string3[18], 4);
+  }
+}
+
+/*******************************************************************************
+ * Function Name  : HexToChar.
+ * Description    : Convert Hex 32Bits value into char.
+ * Input          : None.
+ * Output         : None.
+ * Return         : None.
+ *******************************************************************************/
+static void IntToUnicode (uint32_t value , uint8_t *pbuf , uint8_t len)
+{
+  uint8_t idx = 0;
+
+  for( idx = 0 ; idx < len ; idx ++)
+  {
+    if( ((value >> 28)) < 0xA )
+    {
+      pbuf[ 2* idx] = (value >> 28) + '0';
+    }
+    else
+    {
+      pbuf[2* idx] = (value >> 28) + 'A' - 10;
+    }
+
+    value = value << 4;
+
+    pbuf[ 2* idx + 1] = 0;
+  }
+}

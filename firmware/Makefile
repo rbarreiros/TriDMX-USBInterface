@@ -4,7 +4,7 @@
 #
 
 # En/disable usage of maplemini bootloader support
-USE_BOOTLOADER ?= 0
+USE_BOOTLOADER ?= 1
 
 LOAD_ADDRESS = 0x08002000
 CORTEX_VTOR_INIT = 0x2000
