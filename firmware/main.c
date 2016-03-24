@@ -25,7 +25,7 @@
 #include "dmx.h"
 
 // USB Thread
-static THD_WORKING_AREA(waThread2, 8192);
+static THD_WORKING_AREA(waThread2, 10240);
 static THD_FUNCTION(Thread2, arg)
 {
   event_listener_t el1;

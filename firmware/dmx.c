@@ -146,6 +146,11 @@ uint8_t dmxSetStream(uint8_t *data, uint8_t len, uint8_t start)
   static int lastAddr = 1;
 
   if(start) lastAddr = 1;
+  else
+  {
+    (void)i; // break
+  }
+  
   for(i = 1; i < len; i++)
   {
     dmxStream[data[0]][lastAddr++] = data[i] & 0xff;
