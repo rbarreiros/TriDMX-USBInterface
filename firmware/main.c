@@ -1,18 +1,3 @@
-/*
-    ChibiOS - Copyright (C) 2006..2015 Giovanni Di Sirio
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-        http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-*/
 
 #include <stdio.h>
 #include <string.h>
@@ -25,30 +10,22 @@
 #include "dmx.h"
 
 // USB Thread
-static THD_WORKING_AREA(waThread2, 10240);
+static THD_WORKING_AREA(waThread2, 8192);
 static THD_FUNCTION(Thread2, arg)
 {
   event_listener_t el1;
   eventflags_t flags;
-
-  chRegSetThreadName("USB");
+  uint8_t clear_data[USB_MAX_PACKET_SIZE];
   
+  chRegSetThreadName("USB");
   (void)arg;
 
-  /*
-   * Initializes a Bulk USB driver.
-   */
   sduObjectInit(&SDU1);
   sduStart(&SDU1, &serusbcfg);
 
-  /*
-   * Activates the USB driver and then the USB bus pull-up on D+.
-   * Note, a delay is inserted in order to not have to disconnect the cable
-   * after a reset.
-   */
   usbDisconnectBus(serusbcfg.usbp);
   chThdSleepMilliseconds(1500);
-  usbStart(&USBD1, &usbcfg);
+  usbStart(serusbcfg.usbp, &usbcfg);
   usbConnectBus(serusbcfg.usbp);
 
   chEvtRegisterMask(chnGetEventSource(&SDU1), &el1, ALL_EVENTS);
@@ -56,6 +33,7 @@ static THD_FUNCTION(Thread2, arg)
   while(USBD1.state != USB_READY) chThdSleepMilliseconds(10);
   while(SDU1.state != SDU_READY) chThdSleepMilliseconds(10);
 
+  uint8_t ret;
   while(!chThdShouldTerminateX())
   {
     chEvtWaitAny(ALL_EVENTS);
@@ -65,49 +43,39 @@ static THD_FUNCTION(Thread2, arg)
 
     if (flags & CHN_INPUT_AVAILABLE)
     {
-      uint8_t cmd_res = usbProtoReadCmd((BaseChannel *)&SDU1);
-      (void)cmd_res; // Not used for now
-      //chnReadTimeout((BaseChannel *)&SDU1, clear_buff, 64, MS2ST(25) );
+      palTogglePad(GPIOC, 13);
+
+      // Process
+      ret = usbProtoReadCmd((BaseChannel *)&SDU1);
+
+      // Clear buffer
+      chnReadTimeout((BaseChannel *)&SDU1, clear_data, USB_MAX_PACKET_SIZE, TIME_IMMEDIATE);
+
+      // Reply status
+      if(ret != MASK_REPLY_INFO)
+        chnPutTimeout((BaseChannel *)&SDU1, ret, MS2ST(25));
     }
   }
-
-  // Shutdown was issued
-  usbDisconnectBus(serusbcfg.usbp);
-  chThdSleepMilliseconds(1500);
-  //usbStop(&USBD1);
-  //sduStop(&SDU1);
-
-  // Force USB Disconnect driving PA12 low for a bit
-  // *** WARNING *** NEEDS Pull-up on PA12 CAN DAMAGE STUFF
-  /*
-  palSetPadMode(GPIOA, 12, PAL_MODE_OUTPUT_OPENDRAIN);
-  palClearPad(GPIOA, 12);
-  chThdSleepMilliseconds(500);
-  palSetPadMode(GPIOA, 12, PAL_MODE_INPUT);
-  chThdSleepMilliseconds(500);
-  */
-  
-  return;
 }
 
 
 /*
  * Application entry point.
  */
-//int __attribute__((noreturn)) main(void) {
-int main(void) {
+int __attribute__((noreturn)) main(void) {
+//int main(void) {
   thread_t *usbThread;
 
   Get_SerialNum();
   
-  while(TRUE)
+  while(true)
   {
     halInit();
     chSysInit();
     
-    DMXConfig dmx1Config = { 0, &UARTD1, { GPIOA, 9, 10 }, {GPIOA, 11 }, { GPIOC, 13 }, { GPIOA, 14 } };
-    DMXConfig dmx2Config = { 1, &UARTD2, { GPIOA, 2, 3 }, { GPIOA, 4 }, { GPIOA, 5}, { GPIOA, 6} };
-    DMXConfig dmx3Config = { 2, &UARTD3, { GPIOB, 10, 11 }, { GPIOB, 12 }, { GPIOB, 13 }, { GPIOB, 14} };
+    DMXConfig dmx1Config = { 0, &UARTD1, { GPIOA, 9, 10 }, {GPIOA, 11 }, { GPIOB, 7 }, { GPIOA, 14 } };
+    DMXConfig dmx2Config = { 1, &UARTD2, { GPIOA, 2, 3 }, { GPIOA, 4 }, { GPIOB, 8}, { GPIOA, 6} };
+    DMXConfig dmx3Config = { 2, &UARTD3, { GPIOB, 10, 11 }, { GPIOB, 12 }, { GPIOB, 9 }, { GPIOB, 14} };
     
     // Start USB Thread
     usbThread = chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
@@ -121,14 +89,16 @@ int main(void) {
     dmxInit(&dmx3Config);
     dmxStart(&dmx3Config);
     
-    while (!gDoShutdown) {
-      chThdSleepMilliseconds(10);
+    //while (!gDoShutdown)
+    while(true)
+    {
+      chThdSleepMilliseconds(1000);
     }
 
     // Shutdown and reset
 
     // Wait a bit before shutting everything down
-    chThdSleepMilliseconds(500);
+    //chThdSleepMilliseconds(500);
 
     // Stop USB Thread
     chThdTerminate(usbThread);
@@ -137,7 +107,8 @@ int main(void) {
     dmxStop(&dmx1Config);
     dmxStop(&dmx2Config);
     dmxStop(&dmx3Config);
-    
+
+    /*
     chSysDisable();
     chSysEnable();
     chSysDisable();
@@ -160,5 +131,6 @@ int main(void) {
     //SCB->AIRCR = (0x5FA << SCB_AIRCR_VECTKEY_Pos) |
     //    SCB_AIRCR_SYSRESETREQ;
     NVIC_SystemReset();
+    */
   }
 }

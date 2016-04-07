@@ -8,6 +8,8 @@ uint8_t dmxStream[3][DMX_BUFFER_SIZE] = { {0}, {0}, {0} };
 uint8_t dmxStatus[3] = {0};
 DMXPinConfig dmxPinCfg[3];
 
+void dmxProcessTransferComplete(UARTDriver *uart);
+
 /**
  *
  * UARTConfig uartCfg = {
@@ -24,9 +26,9 @@ DMXPinConfig dmxPinCfg[3];
  */
 
 UARTConfig uartCfg[3] = {
-  { NULL, NULL, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 },
-  { NULL, NULL, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 },
-  { NULL, NULL, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 }
+  { NULL, &dmxProcessTransferComplete, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 },
+  { NULL, &dmxProcessTransferComplete, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 },
+  { NULL, &dmxProcessTransferComplete, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 }
 };
 
 void dmxProcessTransferComplete(UARTDriver *uart)
@@ -96,15 +98,15 @@ void dmxInit(DMXConfig *cfg)
 void dmxStart(DMXConfig *cfg)
 {
   uint8_t tmp[1] = {0};
-  
-  uartCfg[cfg->id].txend2_cb = &dmxProcessTransferComplete;
+
+  // Make sure the driver is stopped
+  uartStop(cfg->driver);
   uartStart(cfg->driver, &uartCfg[cfg->id]);
   uartStartSend(cfg->driver, 1, &tmp);
 }
 
 void dmxStop(DMXConfig *cfg)
 {
-  uartCfg[cfg->id].txend2_cb = NULL;
   uartStop(cfg->driver);
 }
 
@@ -139,26 +141,25 @@ uint8_t dmxUpdate(uint8_t *data, uint8_t len)
   return 0;
 }
 
-uint8_t dmxSetStream(uint8_t *data, uint8_t len, uint8_t start)
+uint8_t dmxSetStream(uint8_t port, uint8_t *data, uint8_t len, uint8_t start)
 {
-  if(data[0] > 2) return 1;
-  int i;
-  static int lastAddr = 1;
+  if(port > 2) return 1;
 
-  if(start) lastAddr = 1;
-  else
-  {
-    (void)i; // break
-  }
+  int i;
+  static int lastAddr[3] = {1};
+
+  if(start)
+    lastAddr[port] = 1;
   
-  for(i = 1; i < len; i++)
+  for(i = 0; i < len; i++)
   {
-    dmxStream[data[0]][lastAddr++] = data[i] & 0xff;
-    if(lastAddr > 513) return 1;
+    dmxStream[port][lastAddr[port]++] = data[i];
+    if(lastAddr[port] > 513) return 1;
   }
 
   return 0;
 }
+
 
 void dmxGetStream(uint8_t port, uint8_t *data, uint8_t len, uint8_t start)
 {

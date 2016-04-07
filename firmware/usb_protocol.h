@@ -1,6 +1,13 @@
 #ifndef __USB_PROTOCOL_H__
 #define __USB_PROTOCOL_H__
 
+typedef struct
+{
+  uint8_t cmd;
+  uint8_t len;
+  uint8_t port;
+} cmd_header_t;
+
 // Port Modes
 
 #define MODE_USB_DIR  0x01 // DMX Direction, 0 out 1 in
@@ -30,12 +37,14 @@
 
 // Error
 
-#define MASK_REPLY_OK  0x00
-#define MASK_REPLY_ERR 0x80
+#define MASK_REPLY_OK   0x00
+#define MASK_REPLY_INFO 0x40
+#define MASK_REPLY_ERR  0x80
 
 #define MASK_ERR_WRONG_HEADER    0x01
 #define MASK_ERR_WRONG_COMMAND   0x02
 #define MASK_ERR_WRONG_DATA_SIZE 0x03
+#define MASK_ERR_DATA_TOOBIG     0x04
 
 #define MASK_ERR_DMX_OUT_UPDATE  0x08
 #define MASK_ERR_DMX_OUT_STREAM  0x09

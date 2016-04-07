@@ -31,10 +31,10 @@
 #define USB_VENDOR_ID	    0x0483      /* USB vendor ID used by the device
                                          * 0x0483 is STMs ID
                                          */
-#define USB_PRODUCT_ID	    0xFFFF      /* USB product ID used by the device */
+#define USB_PRODUCT_ID	    0xFEDC      /* USB product ID used by the device */
 #define USB_ENDPOINT_IN	    (LIBUSB_ENDPOINT_IN  | 1)   /* endpoint address */
-#define USB_ENDPOINT_OUT	(LIBUSB_ENDPOINT_OUT | 2)   /* endpoint address */
-#define USB_TIMEOUT	        3000        /* Connection timeout (in ms) */
+#define USB_ENDPOINT_OUT    (LIBUSB_ENDPOINT_OUT | 1)   /* endpoint address */
+#define USB_TIMEOUT	    3000        /* Connection timeout (in ms) */
 
 static libusb_context *ctx = NULL;
 static libusb_device_handle *handle;
@@ -163,8 +163,8 @@ uint32_t diff=0;
 
     //continuously read USB transfers
  	while (1){
- 		usb_read();
-//		usb_write();
+          usb_write();
+          usb_read();
  	}
     //never reached
  	libusb_close(handle);

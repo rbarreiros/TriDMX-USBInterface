@@ -25,6 +25,8 @@ SerialUSBDriver SDU1;
 #define USBD1_DATA_REQUEST_EP           1
 #define USBD1_DATA_AVAILABLE_EP         1
 
+//////////////////////////////////////// 
+
 bool gDoShutdown = 0;
 
 struct usb_request {
@@ -34,6 +36,8 @@ struct usb_request {
   uint16_t wIndex;
   uint16_t wLength;
 };
+
+////////////////////////////////////////
 
 static void IntToUnicode (uint32_t value , uint8_t *pbuf , uint8_t len);
 
@@ -63,7 +67,6 @@ static const USBDescriptor vcom_device_descriptor = {
     vcom_device_descriptor_data
 };
 
-/* Configuration Descriptor tree for a CDC.*/
 static const uint8_t vcom_configuration_descriptor_data[32] = {
   /* Configuration Descriptor.*/
   USB_DESC_CONFIGURATION(32,            /* wTotalLength.                    */
@@ -288,6 +291,7 @@ static void sof_handler(USBDriver *usbp) {
 }
 
 // Handle the device reset on USB to enter bootloader
+/*
 static bool request_hook(USBDriver *usbp)
 {
   struct usb_request *rq;
@@ -307,6 +311,7 @@ static bool request_hook(USBDriver *usbp)
 
   return false;
 }
+*/
 
 /*
  * USB driver configuration.
@@ -314,7 +319,8 @@ static bool request_hook(USBDriver *usbp)
 const USBConfig usbcfg = {
   usb_event,
   get_descriptor,
-  request_hook,
+  //request_hook,
+  sduRequestsHook,
   sof_handler
 };
 
