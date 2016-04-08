@@ -4,8 +4,8 @@
 #include "usbdrv.h"
 
 uint16_t dmxBRR = 0, brkBRR = 0;
-uint8_t dmxStream[3][DMX_BUFFER_SIZE] = { {0}, {0}, {0} };
-uint8_t dmxStatus[3] = {0};
+uint8_t dmxStream[3][DMX_BUFFER_SIZE];
+uint8_t dmxStatus[3] = {0, 0, 0};
 DMXPinConfig dmxPinCfg[3];
 
 void dmxProcessTransferComplete(UARTDriver *uart);
@@ -93,6 +93,13 @@ void dmxInit(DMXConfig *cfg)
   if(brkBRR == 0) brkBRR = cfg->driver->usart->BRR;
 
   uartStop(cfg->driver);
+
+  // Init DMX Buffer
+  unsigned int i;
+  for(i = 0; i < DMX_BUFFER_SIZE; i++)
+  {
+    dmxStream[cfg->id][i] = 0;
+  }
 }
 
 void dmxStart(DMXConfig *cfg)
@@ -124,18 +131,17 @@ void dmxSetChannel(uint8_t port, uint16_t channel, uint8_t value)
 }
 
 // Functions used by USB to update the DMX Stream or read from
-uint8_t dmxUpdate(uint8_t *data, uint8_t len)
+uint8_t dmxUpdate(uint8_t port, uint8_t *data, uint8_t len)
 {
-  // First array item is the Port ( 1 based, so 1, 2 or 3 )
-  if(data[0] < 1 || data[0] > 3) return 1;
+  if(port > 2) return 1;
 
   // Data needs to be divisible by 2, as it's chn/value pairs
-  if( (len - 1) % 2 != 0 ) return 1;
+  if( len % 2 != 0 ) return 1;
 
   int i;
-  for(i = 1; i < (len -1); i += 2)
+  for(i = 0; i < len; i += 2)
   {
-    dmxSetChannel(data[0] - 1, data[i], data[i + 1]);
+    dmxSetChannel(port, data[i], data[i + 1]);
   }
 
   return 0;
@@ -146,15 +152,23 @@ uint8_t dmxSetStream(uint8_t port, uint8_t *data, uint8_t len, uint8_t start)
   if(port > 2) return 1;
 
   int i;
-  static int lastAddr[3] = {1};
+  static unsigned int lastAddr[3] = {1, 1, 1};
 
   if(start)
     lastAddr[port] = 1;
   
   for(i = 0; i < len; i++)
   {
-    dmxStream[port][lastAddr[port]++] = data[i];
-    if(lastAddr[port] > 513) return 1;
+    chSysLock();
+    dmxStream[port][lastAddr[port]] = data[i];
+    chSysUnlock();
+    
+    lastAddr[port]++;
+    if(lastAddr[port] > (DMX_BUFFER_SIZE - 1))
+    {
+      lastAddr[port] = 1;
+      return 1;
+    }
   }
 
   return 0;

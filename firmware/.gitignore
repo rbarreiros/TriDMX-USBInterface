@@ -1,2 +1,5 @@
 .dep/*
 build/*
+host/async
+host/benchmark
+host/test

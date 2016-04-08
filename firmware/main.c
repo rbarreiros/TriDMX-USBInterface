@@ -10,12 +10,11 @@
 #include "dmx.h"
 
 // USB Thread
-static THD_WORKING_AREA(waThread2, 8192);
+static THD_WORKING_AREA(waThread2, 2048);
 static THD_FUNCTION(Thread2, arg)
 {
   event_listener_t el1;
   eventflags_t flags;
-  uint8_t clear_data[USB_MAX_PACKET_SIZE];
   
   chRegSetThreadName("USB");
   (void)arg;
@@ -33,7 +32,7 @@ static THD_FUNCTION(Thread2, arg)
   while(USBD1.state != USB_READY) chThdSleepMilliseconds(10);
   while(SDU1.state != SDU_READY) chThdSleepMilliseconds(10);
 
-  uint8_t ret;
+  //uint8_t ret;
   while(!chThdShouldTerminateX())
   {
     chEvtWaitAny(ALL_EVENTS);
@@ -43,17 +42,9 @@ static THD_FUNCTION(Thread2, arg)
 
     if (flags & CHN_INPUT_AVAILABLE)
     {
-      palTogglePad(GPIOC, 13);
-
       // Process
-      ret = usbProtoReadCmd((BaseChannel *)&SDU1);
-
-      // Clear buffer
-      chnReadTimeout((BaseChannel *)&SDU1, clear_data, USB_MAX_PACKET_SIZE, TIME_IMMEDIATE);
-
-      // Reply status
-      if(ret != MASK_REPLY_INFO)
-        chnPutTimeout((BaseChannel *)&SDU1, ret, MS2ST(25));
+      //ret =
+      usbProtoReadCmd((BaseChannel *)&SDU1);
     }
   }
 }

@@ -45,14 +45,14 @@ static void IntToUnicode (uint32_t value , uint8_t *pbuf , uint8_t len);
  * USB Device Descriptor.
  */
 static const uint8_t vcom_device_descriptor_data[18] = {
-  USB_DESC_DEVICE       (0x0200,        /* bcdUSB (1.1).                    */
+  USB_DESC_DEVICE       (0x0110,        /* bcdUSB (1.1).                    */
                          0x00,          /* bDeviceClass (CDC).              */
                          0x00,          /* bDeviceSubClass.                 */
                          0x00,          /* bDeviceProtocol.                 */
                          0x40,          /* bMaxPacketSize.                  */
                          USB_VID,       /* idVendor (ST).                   */
                          USB_PID,       /* idProduct.                       */
-                         0x0200,        /* bcdDevice.                       */
+                         0x0110,        /* bcdDevice.                       */
                          1,             /* iManufacturer.                   */
                          2,             /* iProduct.                        */
                          3,             /* iSerialNumber.                   */

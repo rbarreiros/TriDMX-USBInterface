@@ -1,7 +1,7 @@
 #ifndef __USBDRV_H__
 #define __USBDRV_H__
 
-#define USB_MAX_PACKET_SIZE   64
+#define USB_MAX_PACKET_SIZE   63
 
 extern const USBConfig usbcfg;
 extern SerialUSBConfig serusbcfg;
