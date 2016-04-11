@@ -26,7 +26,6 @@ uint8_t usbProtoReadCmd(BaseChannel *chn)
     if(data_read > header->len + 3)
     {
       ret = err | MASK_ERR_DATA_TOOBIG;
-      palTogglePad(GPIOC, 13);
       continue;
     }
 
@@ -48,7 +47,6 @@ uint8_t usbProtoReadCmd(BaseChannel *chn)
       default:
         ret = err | MASK_ERR_NOT_IMPLEMENTED;
     }
-    
   }
   
   return ret;

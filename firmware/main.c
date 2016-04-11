@@ -41,11 +41,7 @@ static THD_FUNCTION(Thread2, arg)
     chSysUnlock();
 
     if (flags & CHN_INPUT_AVAILABLE)
-    {
-      // Process
-      //ret =
       usbProtoReadCmd((BaseChannel *)&SDU1);
-    }
   }
 }
 

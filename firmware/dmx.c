@@ -1,5 +1,6 @@
 
 #include <hal.h>
+#include <string.h>
 #include "dmx.h"
 #include "usbdrv.h"
 
@@ -151,25 +152,17 @@ uint8_t dmxSetStream(uint8_t port, uint8_t *data, uint8_t len, uint8_t start)
 {
   if(port > 2) return 1;
 
-  int i;
   static unsigned int lastAddr[3] = {1, 1, 1};
 
   if(start)
     lastAddr[port] = 1;
+
+  // This should NEVER happen if all USB comms are OK
+  if(lastAddr[port] + len > DMX_BUFFER_SIZE)
+    return 1;
   
-  for(i = 0; i < len; i++)
-  {
-    chSysLock();
-    dmxStream[port][lastAddr[port]] = data[i];
-    chSysUnlock();
-    
-    lastAddr[port]++;
-    if(lastAddr[port] > (DMX_BUFFER_SIZE - 1))
-    {
-      lastAddr[port] = 1;
-      return 1;
-    }
-  }
+  memcpy(&dmxStream[port][lastAddr[port]], data, len);
+  lastAddr[port] += len;
 
   return 0;
 }
