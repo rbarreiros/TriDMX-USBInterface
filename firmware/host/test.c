@@ -43,7 +43,7 @@ int main(void)
   /*
   r = libusb_set_configuration(devh, 1);
   if(r < 0) {
-    fprintf(stderr, "usb_claim_interface error %d\n", r);
+    fprintf(stderr, "usb_set_configuration error %d\n", r);
     goto clean_out;
   }
   */

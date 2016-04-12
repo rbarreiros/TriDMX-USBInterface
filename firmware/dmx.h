@@ -49,16 +49,6 @@ typedef enum
   IDLE
 } eDmxState;
 
-typedef struct
-{
-  uint8_t id;             // port id
-  uint8_t direction;      // direction, one of 0x00 Output, 0x01 Input, 0x02 Merge Output
-  uint8_t merge_source_a; // merge source a - port id 0,1,2 (except self ofc) or 3 - USB
-  uint8_t merge_source_b; // merge source b
-  uint8_t merge_htp_ltp;  // merge method, 0x00 - htp, 0x01 ltp
-  // anything else needed ?!
-} DMXPortConfig;
-
 void dmxInit(DMXConfig *cfg);
 void dmxStart(DMXConfig *cfg);
 void dmxStop(DMXConfig *cfg);

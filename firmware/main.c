@@ -54,7 +54,7 @@ int __attribute__((noreturn)) main(void) {
   thread_t *usbThread;
 
   Get_SerialNum();
-  
+
   while(true)
   {
     halInit();

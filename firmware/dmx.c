@@ -126,12 +126,11 @@ void dmxSetDirection(DMXConfig *cfg, eDmxDirection dir)
 
 void dmxSetChannel(uint8_t port, uint16_t channel, uint8_t value)
 {
-  if(port > 3) return;
-  if(channel > 512 || channel == 0) return;
-  dmxStream[port][channel] = value & 0xff;
+  if(port > 2) return;
+  if((channel + 1) > DMX_BUFFER_SIZE) return;
+  dmxStream[port][channel + 1] = value & 0xff;
 }
 
-// Functions used by USB to update the DMX Stream or read from
 uint8_t dmxUpdate(uint8_t port, uint8_t *data, uint8_t len)
 {
   if(port > 2) return 1;
@@ -142,7 +141,10 @@ uint8_t dmxUpdate(uint8_t port, uint8_t *data, uint8_t len)
   int i;
   for(i = 0; i < len; i += 2)
   {
-    dmxSetChannel(port, data[i], data[i + 1]);
+    // Let's not forget DMX starts at index 1 (0 is SC)
+    // While channels received by the device are 0 based
+    if( (data[i] + 1) < DMX_BUFFER_SIZE)
+      dmxStream[port][data[i] + 1] = data[i + 1];
   }
 
   return 0;
@@ -166,7 +168,6 @@ uint8_t dmxSetStream(uint8_t port, uint8_t *data, uint8_t len, uint8_t start)
 
   return 0;
 }
-
 
 void dmxGetStream(uint8_t port, uint8_t *data, uint8_t len, uint8_t start)
 {
