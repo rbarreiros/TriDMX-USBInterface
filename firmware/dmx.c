@@ -5,32 +5,57 @@
 #include "usbdrv.h"
 
 uint16_t dmxBRR = 0, brkBRR = 0;
-uint8_t dmxStream[3][DMX_BUFFER_SIZE];
-uint8_t dmxStatus[3] = {0, 0, 0};
 DMXPinConfig dmxPinCfg[3];
+uint8_t dmxStream[3][DMX_BUFFER_SIZE];
+
+volatile uint8_t dmxStatus[3] = {0, 0, 0};
 
 void dmxProcessTransferComplete(UARTDriver *uart);
 
 /**
  *
  * UARTConfig uartCfg = {
- * NULL,   // End of Transmission buffer Callback
- * NULL,   // Physical end of transmission callback
- * NULL,   // Received buffer filled callback
- * NULL,   // Char received while out of the UART_RECEIVE state (to use when receiving dmx)
- * NULL,   // Receive error callback
- * DMX_BAUDRATE, // Baudrate
- * 0, // cr1 register values
- * USART_CR2_STOP_1, // cr2 register values
- * 0, // cr3 register values
+ * txend1_cb - NULL,   // End of Transmission buffer Callback
+ * txend2_cb - NULL,   // Physical end of transmission callback
+ * rxend_cb - NULL,   // Received buffer filled callback
+ * rxchar_cb - NULL,   // Char received while out of the UART_RECEIVE state (to use when receiving dmx)
+ * rxerr_cb - NULL,   // Receive error callback
+ * speed - DMX_BAUDRATE, // Baudrate
+ * cr1 - 0, // cr1 register values
+ * cr2 - USART_CR2_STOP_1, // cr2 register values
+ * cr3 - 0, // cr3 register values
  * };
  */
 
 UARTConfig uartCfg[3] = {
-  { NULL, &dmxProcessTransferComplete, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 },
-  { NULL, &dmxProcessTransferComplete, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 },
-  { NULL, &dmxProcessTransferComplete, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 }
+  { NULL, NULL, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 },
+  { NULL, NULL, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 },
+  { NULL, NULL, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 }
 };
+
+void dmxProcessError(UARTDriver *uart, uartflags_t flag)
+{
+  uint8_t id = 0;
+  
+  if(uart == &UARTD1)
+    id = 0;
+  else if(uart == &UARTD2)
+    id = 1;
+  else if(uart == &UARTD3)
+    id = 2;
+  else
+    return;
+    
+  if(flag == UART_FRAMING_ERROR)
+  {
+    palTogglePad(GPIOC, 13);
+    chSysLockFromISR();
+    uartStartReceiveI(uart, DMX_BUFFER_SIZE, dmxStream[id]);
+    chSysUnlockFromISR();
+  }
+  
+  return;
+}
 
 void dmxProcessTransferComplete(UARTDriver *uart)
 {
@@ -85,14 +110,16 @@ void dmxInit(DMXConfig *cfg)
   palSetPadMode(cfg->dir_pad.port, cfg->dir_pad.pad, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(cfg->ledout_pad.port, cfg->ledout_pad.pad, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(cfg->ledin_pad.port, cfg->ledin_pad.pad, PAL_MODE_OUTPUT_PUSHPULL);
-  
+
+  // Start and stop Uart to setup the BRR's
   uartStart(cfg->driver, &uartCfg[cfg->id]);
   if(dmxBRR == 0) dmxBRR = cfg->driver->usart->BRR;
+  uartStop(cfg->driver);
 
   uartCfg[cfg->id].speed = BREAK_BAUDRATE;
+
   uartStart(cfg->driver, &uartCfg[cfg->id]);
   if(brkBRR == 0) brkBRR = cfg->driver->usart->BRR;
-
   uartStop(cfg->driver);
 
   // Init DMX Buffer
@@ -101,27 +128,59 @@ void dmxInit(DMXConfig *cfg)
   {
     dmxStream[cfg->id][i] = 0;
   }
+  
 }
 
 void dmxStart(DMXConfig *cfg)
 {
-  uint8_t tmp[1] = {0};
+  switch(cfg->cfg.direction)
+  {
+    case DMX_OUT: // Output
+      uartCfg[cfg->id].txend2_cb = &dmxProcessTransferComplete;
+      
+      // Make sure the driver is stopped
+      uartStop(cfg->driver);
+      uartStart(cfg->driver, &uartCfg[cfg->id]);
 
-  // Make sure the driver is stopped
-  uartStop(cfg->driver);
-  uartStart(cfg->driver, &uartCfg[cfg->id]);
-  uartStartSend(cfg->driver, 1, &tmp);
+      // Starts the automated dmx send process
+      uint8_t tmp[1] = {0};
+      uartStartSend(cfg->driver, 1, &tmp);
+      break;
+    case DMX_IN: // Input
+      dmxStop(cfg);
+      
+      uartCfg[cfg->id].rxerr_cb = &dmxProcessError;
+      uartCfg[cfg->id].speed = DMX_BAUDRATE;
+      
+      uartStart(cfg->driver, &uartCfg[cfg->id]);
+      break;
+    case DMX_MERGE: // Merge Output
+      // setup this driver as output
+      // configure source a to sum source b
+      // place result in dmxStream
+      break;
+    case DMX_MIRROR: // Mirror
+      // setup this driver as output
+      // copy source dmxStream to this dmxStream
+      break;
+  }
 }
 
 void dmxStop(DMXConfig *cfg)
 {
   uartStop(cfg->driver);
+  uartCfg[cfg->id].txend2_cb = NULL;
+  uartCfg[cfg->id].rxerr_cb = NULL;
+  uartCfg[cfg->id].rxend_cb = NULL;
 }
 
 void dmxSetDirection(DMXConfig *cfg, eDmxDirection dir)
 {
-  (void)cfg;
-  (void)dir;
+  if(dir > DMX_MERGE) return;
+  
+  cfg->cfg.direction = dir;
+  dmxStop(cfg);
+  dmxStart(cfg);
 }
 
 void dmxSetChannel(uint8_t port, uint16_t channel, uint8_t value)

@@ -68,6 +68,7 @@ int main(void)
       data[i] = 0x00;
     }
 
+    data[511] = 0xff;
 
     int sizeLeft = sizeof(data);
     while(sizeLeft)

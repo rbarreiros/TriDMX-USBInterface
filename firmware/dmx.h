@@ -1,6 +1,8 @@
 #ifndef __DMX_H__
 #define __DMX_H__
 
+#include "config.h"
+
 #define DMX_BUFFER_SIZE 513
 #define DMX_BAUDRATE    250000 // 375000
 #define BREAK_BAUDRATE  75000  // 110000
@@ -35,12 +37,15 @@ typedef struct {
   DMXPin dir_pad;
   DMXPin ledout_pad;
   DMXPin ledin_pad;
+  DMXPortConfig cfg;
 } DMXConfig;
 
 typedef enum
 {
+  DMX_OUT = 0,
   DMX_IN,
-  DMX_OUT
+  DMX_MERGE,
+  DMX_MIRROR
 } eDmxDirection;
 
 typedef enum

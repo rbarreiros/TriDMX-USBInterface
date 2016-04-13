@@ -59,10 +59,18 @@ int __attribute__((noreturn)) main(void) {
   {
     halInit();
     chSysInit();
-    
-    DMXConfig dmx1Config = { 0, &UARTD1, { GPIOA, 9, 10 }, {GPIOA, 11 }, { GPIOB, 7 }, { GPIOA, 14 } };
-    DMXConfig dmx2Config = { 1, &UARTD2, { GPIOA, 2, 3 }, { GPIOA, 4 }, { GPIOB, 8}, { GPIOA, 6} };
-    DMXConfig dmx3Config = { 2, &UARTD3, { GPIOB, 10, 11 }, { GPIOB, 12 }, { GPIOB, 9 }, { GPIOB, 14} };
+
+    // This needs to be populated with the saved eeprom values
+    // from the last used configuration, used to setup DMX Ports
+    // when starting
+    DMXConfig dmx1Config = { 0, &UARTD1, { GPIOA, 9, 10 }, {GPIOA, 11 }, { GPIOB, 7 }, { GPIOA, 14 },
+                             { 0, 0, 0, 0, 0 } };
+    DMXConfig dmx2Config = { 1, &UARTD2, { GPIOA, 2, 3 }, { GPIOA, 4 }, { GPIOB, 8}, { GPIOA, 6},
+                             { 0, 0, 0, 0, 0 } };
+    DMXConfig dmx3Config = { 2, &UARTD3, { GPIOB, 10, 11 }, { GPIOB, 12 }, { GPIOB, 9 }, { GPIOB, 14},
+                             { 0, 0, 0, 0, 0 } };
+
+
     
     // Start USB Thread
     usbThread = chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, Thread2, NULL);
