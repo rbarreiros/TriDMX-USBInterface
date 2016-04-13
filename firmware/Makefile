@@ -134,7 +134,7 @@ CSRC = $(STARTUPSRC) \
        $(HALSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
-       dmx.c usb_protocol.c usbdrv.c main.c
+       stm32f10x_flash.c eeprom.c config.c dmx.c usb_protocol.c usbdrv.c main.c
 
 #       $(TESTSRC) \
 #       $(STREAMSSRC) \

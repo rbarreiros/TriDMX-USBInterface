@@ -1,6 +1,8 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+#include <stdint.h>
+
 typedef struct
 {
   uint8_t id;             // port id
