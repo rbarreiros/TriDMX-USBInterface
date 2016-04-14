@@ -5,12 +5,22 @@
 #include "usbdrv.h"
 
 uint16_t dmxBRR = 0, brkBRR = 0;
-DMXPinConfig dmxPinCfg[3];
 uint8_t dmxStream[3][DMX_BUFFER_SIZE];
 
 volatile uint8_t dmxStatus[3] = {0, 0, 0};
 
-void dmxProcessTransferComplete(UARTDriver *uart);
+// Default Values
+// This needs to be populated with the saved eeprom values
+// from the last used configuration, used to setup DMX Ports
+// when starting
+DMXConfig dmxConfig[3] = {
+  { 0, &UARTD1, { GPIOA, 9, 10 }, {GPIOA, 11 }, { GPIOB, 7 }, { GPIOA, 14 },
+    { 0, 0, 0, 0, 0 }, false, false },
+  { 1, &UARTD2, { GPIOA, 2, 3 }, { GPIOA, 4 }, { GPIOB, 8}, { GPIOA, 6},
+    { 0, 0, 0, 0, 0 }, false, false },
+  { 2, &UARTD3, { GPIOB, 10, 11 }, { GPIOB, 12 }, { GPIOB, 9 }, { GPIOB, 14},
+    { 0, 0, 0, 0, 0 }, false, false }
+};
 
 /**
  *
@@ -33,6 +43,25 @@ UARTConfig uartCfg[3] = {
   { NULL, NULL, NULL, NULL, NULL, DMX_BAUDRATE, 0, USART_CR2_STOP_1, 0 }
 };
 
+// Used to signal the reception completion of the dmx stream
+void dmxProcessReceiveEnd(UARTDriver *uart)
+{
+  uint8_t id = 0;
+  
+  if(uart == &UARTD1)
+    id = 0;
+  else if(uart == &UARTD2)
+    id = 1;
+  else if(uart == &UARTD3)
+    id = 2;
+  else
+    return;
+
+  (void)id;
+  
+  return;
+}
+
 void dmxProcessError(UARTDriver *uart, uartflags_t flag)
 {
   uint8_t id = 0;
@@ -48,7 +77,11 @@ void dmxProcessError(UARTDriver *uart, uartflags_t flag)
     
   if(flag == UART_FRAMING_ERROR)
   {
-    palTogglePad(GPIOC, 13);
+    // Toggle input led
+    if(!dmxConfig[id].id_enabled)
+      palTogglePad(dmxConfig[id].ledin_pad.port, dmxConfig[id].ledin_pad.pad);
+
+    // Start DMA DMX Read
     chSysLockFromISR();
     uartStartReceiveI(uart, DMX_BUFFER_SIZE, dmxStream[id]);
     chSysUnlockFromISR();
@@ -83,7 +116,10 @@ void dmxProcessTransferComplete(UARTDriver *uart)
       break;
     case IDLE:  // Finished sending stream, send break
       dmxStatus[id] = BREAK;
-      palTogglePad(dmxPinCfg[id].ledout_pad.port, dmxPinCfg[id].ledout_pad.pad); // DMX 1 Led Togle
+
+      // Toggle output led
+      if(!dmxConfig[id].id_enabled)
+        palTogglePad(dmxConfig[id].ledout_pad.port, dmxConfig[id].ledout_pad.pad);
 
       uart->usart->BRR = brkBRR;
       uint8_t tmp[1] = {0};
@@ -94,65 +130,65 @@ void dmxProcessTransferComplete(UARTDriver *uart)
   };
 }
 
-void dmxInit(DMXConfig *cfg)
+void dmxInit(uint8_t id)
 {
-  dmxStatus[cfg->id] = BREAK;
+  dmxStatus[id] = IDLE;
 
-  dmxPinCfg[cfg->id].dir_pad = cfg->dir_pad;
-  dmxPinCfg[cfg->id].ledout_pad = cfg->ledout_pad;
-  dmxPinCfg[cfg->id].ledin_pad = cfg->ledin_pad;
-  
   // Force pal mode here, ignore the board.h/board.c
-  palSetPadMode(cfg->uart_pad.port, cfg->uart_pad.pad_tx, PAL_MODE_STM32_ALTERNATE_PUSHPULL);
-  palSetPadMode(cfg->uart_pad.port, cfg->uart_pad.pad_rx, PAL_MODE_INPUT);
+  palSetPadMode(dmxConfig[id].uart_pad.port, dmxConfig[id].uart_pad.pad_tx, PAL_MODE_STM32_ALTERNATE_PUSHPULL);
+  palSetPadMode(dmxConfig[id].uart_pad.port, dmxConfig[id].uart_pad.pad_rx, PAL_MODE_INPUT);
 
   // Setup Dir and LED Pins
-  palSetPadMode(cfg->dir_pad.port, cfg->dir_pad.pad, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetPadMode(cfg->ledout_pad.port, cfg->ledout_pad.pad, PAL_MODE_OUTPUT_PUSHPULL);
-  palSetPadMode(cfg->ledin_pad.port, cfg->ledin_pad.pad, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPadMode(dmxConfig[id].dir_pad.port, dmxConfig[id].dir_pad.pad, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPadMode(dmxConfig[id].ledout_pad.port, dmxConfig[id].ledout_pad.pad, PAL_MODE_OUTPUT_PUSHPULL);
+  palSetPadMode(dmxConfig[id].ledin_pad.port, dmxConfig[id].ledin_pad.pad, PAL_MODE_OUTPUT_PUSHPULL);
 
   // Start and stop Uart to setup the BRR's
-  uartStart(cfg->driver, &uartCfg[cfg->id]);
-  if(dmxBRR == 0) dmxBRR = cfg->driver->usart->BRR;
-  uartStop(cfg->driver);
+  uartStart(dmxConfig[id].driver, &uartCfg[id]);
+  if(dmxBRR == 0) dmxBRR = dmxConfig[id].driver->usart->BRR;
+  uartStop(dmxConfig[id].driver);
 
-  uartCfg[cfg->id].speed = BREAK_BAUDRATE;
+  uartCfg[id].speed = BREAK_BAUDRATE;
 
-  uartStart(cfg->driver, &uartCfg[cfg->id]);
-  if(brkBRR == 0) brkBRR = cfg->driver->usart->BRR;
-  uartStop(cfg->driver);
+  uartStart(dmxConfig[id].driver, &uartCfg[id]);
+  if(brkBRR == 0) brkBRR = dmxConfig[id].driver->usart->BRR;
+  uartStop(dmxConfig[id].driver);
 
   // Init DMX Buffer
   unsigned int i;
   for(i = 0; i < DMX_BUFFER_SIZE; i++)
   {
-    dmxStream[cfg->id][i] = 0;
+    dmxStream[id][i] = 0;
   }
   
 }
 
-void dmxStart(DMXConfig *cfg)
+void dmxStart(uint8_t id)
 {
-  switch(cfg->cfg.direction)
+  if(dmxConfig[id].started)
+    return;
+  
+  switch(dmxConfig[id].cfg.direction)
   {
     case DMX_OUT: // Output
-      uartCfg[cfg->id].txend2_cb = &dmxProcessTransferComplete;
+      uartCfg[id].txend2_cb = &dmxProcessTransferComplete;
       
       // Make sure the driver is stopped
-      uartStop(cfg->driver);
-      uartStart(cfg->driver, &uartCfg[cfg->id]);
+      uartStop(dmxConfig[id].driver);
+      uartStart(dmxConfig[id].driver, &uartCfg[id]);
 
       // Starts the automated dmx send process
       uint8_t tmp[1] = {0};
-      uartStartSend(cfg->driver, 1, &tmp);
+      uartStartSend(dmxConfig[id].driver, 1, &tmp);
       break;
     case DMX_IN: // Input
-      dmxStop(cfg);
+      dmxStop(id);
+
+      uartCfg[id].rxend_cb = &dmxProcessReceiveEnd;
+      uartCfg[id].rxerr_cb = &dmxProcessError;
+      uartCfg[id].speed = DMX_BAUDRATE;
       
-      uartCfg[cfg->id].rxerr_cb = &dmxProcessError;
-      uartCfg[cfg->id].speed = DMX_BAUDRATE;
-      
-      uartStart(cfg->driver, &uartCfg[cfg->id]);
+      uartStart(dmxConfig[id].driver, &uartCfg[id]);
       break;
     case DMX_MERGE: // Merge Output
       // setup this driver as output
@@ -164,23 +200,29 @@ void dmxStart(DMXConfig *cfg)
       // copy source dmxStream to this dmxStream
       break;
   }
+
+  dmxConfig[id].started = true;
 }
 
-void dmxStop(DMXConfig *cfg)
+void dmxStop(uint8_t id)
 {
-  uartStop(cfg->driver);
-  uartCfg[cfg->id].txend2_cb = NULL;
-  uartCfg[cfg->id].rxerr_cb = NULL;
-  uartCfg[cfg->id].rxend_cb = NULL;
+  uartStop(dmxConfig[id].driver);
+  uartCfg[id].txend2_cb = NULL;
+  uartCfg[id].rxerr_cb = NULL;
+  uartCfg[id].rxend_cb = NULL;
+  dmxConfig[id].started = false;
 }
 
-void dmxSetDirection(DMXConfig *cfg, eDmxDirection dir)
+void dmxSetDirection(uint8_t id, eDmxDirection dir)
 {
   if(dir > DMX_MERGE) return;
   
-  cfg->cfg.direction = dir;
-  dmxStop(cfg);
-  dmxStart(cfg);
+  dmxConfig[id].cfg.direction = dir;
+  if(dmxConfig[id].started)
+  {
+    dmxStop(id);
+    dmxStart(id);
+  }
 }
 
 void dmxSetChannel(uint8_t port, uint16_t channel, uint8_t value)
@@ -242,4 +284,66 @@ uint8_t dmxGetChannel(uint8_t port, uint16_t channel)
   if(channel > 512) return 0;
   
   return dmxStream[port][channel];
+}
+
+// Identify Thread
+static THD_WORKING_AREA(waDMXID, 64);
+static THD_FUNCTION(DMXIDThread, arg)
+{
+  uint8_t id = *((uint8_t*)arg);
+  
+  while(!chThdShouldTerminateX())
+  {
+    palTogglePad(dmxConfig[id].ledout_pad.port, dmxConfig[id].ledout_pad.pad);
+    palTogglePad(dmxConfig[id].ledin_pad.port, dmxConfig[id].ledin_pad.pad);
+    chThdSleepMilliseconds(500);        
+  }  
+}
+
+void dmxIdentify(uint8_t port)
+{
+  static thread_t *blinkThreads[3];
+
+  if(port > 2) return;
+  
+  if(!dmxConfig[port].id_enabled)
+  {
+    dmxConfig[port].id_enabled = true;
+    blinkThreads[port] = chThdCreateStatic(waDMXID, sizeof(waDMXID), LOWPRIO, DMXIDThread, &port);
+  }
+  else
+  {
+    chThdTerminate(blinkThreads[port]);
+    chThdWait(blinkThreads[port]);
+    dmxConfig[port].id_enabled = false;
+  }
+}
+
+// DMX Thread
+THD_WORKING_AREA(waDMX, DMX_THREAD_SIZE);
+THD_FUNCTION(DMXThread, arg)
+{
+  uint8_t i;
+  (void)arg;
+  
+  for(i = 0; i < 3; i++)
+  {
+    dmxInit(i);
+    dmxStart(i);
+  }
+
+  while(!chThdShouldTerminateX())
+  {
+    for(i = 0; i < 3; i++)
+    {
+      // Process Mirror
+      //if(dmxConfig[i].cfg.direction == 
+
+    }
+    
+    chThdSleepMilliseconds(1);
+  }
+
+  for(i = 0; i < 3; i++)
+    dmxStop(i);
 }

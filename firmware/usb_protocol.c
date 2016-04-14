@@ -44,6 +44,10 @@ uint8_t usbProtoReadCmd(BaseChannel *chn)
         chnWriteTimeout(chn, (uint8_t*)&dev_cfg, sizeof(dev_cfg), MS2ST(25));
         ret = MASK_REPLY_OK;
         break;
+
+      case CMD_PORT_ID:
+        dmxIdentify(header->port);
+        break;
         
       case CMD_DMX_OUT_STREAM:
       case CMD_DMX_OUT_STRCONT:
@@ -77,4 +81,42 @@ uint8_t usbProtoReadCmd(BaseChannel *chn)
   }
   
   return ret;
+}
+
+// USB Thread
+THD_WORKING_AREA(waUSB, USB_THREAD_SIZE);
+THD_FUNCTION(USBThread, arg)
+{
+  event_listener_t el1;
+  eventflags_t flags;
+  
+  chRegSetThreadName("USB");
+  (void)arg;
+
+  sduObjectInit(&SDU1);
+  sduStart(&SDU1, &serusbcfg);
+
+  usbDisconnectBus(serusbcfg.usbp);
+  chThdSleepMilliseconds(1500);
+  usbStart(serusbcfg.usbp, &usbcfg);
+  usbConnectBus(serusbcfg.usbp);
+
+  chEvtRegisterMask(chnGetEventSource(&SDU1), &el1, ALL_EVENTS);
+
+  while(USBD1.state != USB_READY) chThdSleepMilliseconds(10);
+  while(SDU1.state != SDU_READY) chThdSleepMilliseconds(10);
+
+  //uint8_t ret;
+  while(!chThdShouldTerminateX())
+  {
+    chEvtWaitAny(ALL_EVENTS);
+    chSysLock();
+    flags = chEvtGetAndClearFlagsI(&el1);
+    chSysUnlock();
+
+    if (flags & CHN_INPUT_AVAILABLE)
+      usbProtoReadCmd((BaseChannel *)&SDU1);
+  }
+
+  // Stop USB here
 }

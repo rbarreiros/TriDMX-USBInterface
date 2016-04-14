@@ -65,10 +65,10 @@ int main(void)
     {
       //if(j > 255) j = 1;
       //data[i] = j;
-      data[i] = 0x00;
+      data[i] = 0xff;
     }
 
-    data[511] = 0xff;
+    data[511] = 0xf0;
 
     int sizeLeft = sizeof(data);
     while(sizeLeft)

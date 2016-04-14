@@ -3,6 +3,21 @@
 
 #include <stdint.h>
 
+// Port Modes
+
+#define DIRECTION_OUTPUT 0x00
+#define DIRECTION_INPUT  0x01
+#define DIRECTION_MERGE  0x02
+#define DIRECTION_MIRROR 0x03
+
+#define MERGE_LTP 0x00;
+#define MERGE_HTP 0x01;
+
+#define SOURCE_0   0x00;
+#define SOURCE_1   0x01;
+#define SOURCE_2   0x02;
+#define SOURCE_USB 0x03;
+
 typedef struct
 {
   uint8_t id;             // port id
