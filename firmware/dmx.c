@@ -287,17 +287,18 @@ uint8_t dmxGetChannel(uint8_t port, uint16_t channel)
 }
 
 // Identify Thread
-static THD_WORKING_AREA(waDMXID, 64);
 static THD_FUNCTION(DMXIDThread, arg)
 {
   uint8_t id = *((uint8_t*)arg);
-  
+
+  dmxConfig[id].id_enabled = true;  
   while(!chThdShouldTerminateX())
   {
     palTogglePad(dmxConfig[id].ledout_pad.port, dmxConfig[id].ledout_pad.pad);
     palTogglePad(dmxConfig[id].ledin_pad.port, dmxConfig[id].ledin_pad.pad);
     chThdSleepMilliseconds(500);        
-  }  
+  }
+  dmxConfig[id].id_enabled = false;
 }
 
 void dmxIdentify(uint8_t port)
@@ -308,14 +309,13 @@ void dmxIdentify(uint8_t port)
   
   if(!dmxConfig[port].id_enabled)
   {
-    dmxConfig[port].id_enabled = true;
-    blinkThreads[port] = chThdCreateStatic(waDMXID, sizeof(waDMXID), LOWPRIO, DMXIDThread, &port);
+    blinkThreads[port] = chThdCreateFromHeap(NULL, THD_WORKING_AREA_SIZE(64),
+					     "ID Thread", NORMALPRIO, DMXIDThread, &port);
   }
   else
   {
     chThdTerminate(blinkThreads[port]);
     chThdWait(blinkThreads[port]);
-    dmxConfig[port].id_enabled = false;
   }
 }
 
