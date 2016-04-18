@@ -10,13 +10,13 @@
 #define DIRECTION_MERGE  0x02
 #define DIRECTION_MIRROR 0x03
 
-#define MERGE_LTP 0x00;
-#define MERGE_HTP 0x01;
+#define MERGE_LTP 0x00
+#define MERGE_HTP 0x01
 
-#define SOURCE_0   0x00;
-#define SOURCE_1   0x01;
-#define SOURCE_2   0x02;
-#define SOURCE_USB 0x03;
+#define SOURCE_0   0x00
+#define SOURCE_1   0x01
+#define SOURCE_2   0x02
+#define SOURCE_USB 0x03
 
 typedef struct
 {
@@ -29,6 +29,7 @@ typedef struct
   uint8_t merge_source_a; // merge source a - port id 0,1,2 (except self ofc) or 3 - USB
   uint8_t merge_source_b; // merge source b
   uint8_t merge_htp_ltp;  // merge method, 0x00 - htp, 0x01 ltp
+  uint32_t stream_ts;     // Timestamp (system tick) of the last dmxStream update (sent or received)
 } DMXPortConfig;
 
 typedef struct

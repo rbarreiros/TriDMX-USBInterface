@@ -15,11 +15,11 @@ volatile uint8_t dmxStatus[3] = {0, 0, 0};
 // when starting
 DMXConfig dmxConfig[3] = {
   { 0, &UARTD1, { GPIOA, 9, 10 }, {GPIOA, 11 }, { GPIOB, 7 }, { GPIOA, 14 },
-    { 0, 0, 0, 0, 0 }, false, false },
+    { 0, 0, 0, 0, 0, 0 }, false, false },
   { 1, &UARTD2, { GPIOA, 2, 3 }, { GPIOA, 4 }, { GPIOB, 8}, { GPIOA, 6},
-    { 0, 0, 0, 0, 0 }, false, false },
+    { 0, 0, 0, 0, 0, 0 }, false, false },
   { 2, &UARTD3, { GPIOB, 10, 11 }, { GPIOB, 12 }, { GPIOB, 9 }, { GPIOB, 14},
-    { 0, 0, 0, 0, 0 }, false, false }
+    { 0, 0, 0, 0, 0, 0 }, false, false }
 };
 
 /**
@@ -56,9 +56,7 @@ void dmxProcessReceiveEnd(UARTDriver *uart)
     id = 2;
   else
     return;
-
   (void)id;
-  
   return;
 }
 
@@ -85,6 +83,7 @@ void dmxProcessError(UARTDriver *uart, uartflags_t flag)
     chSysLockFromISR();
     uartStartReceiveI(uart, DMX_BUFFER_SIZE, dmxStream[id]);
     chSysUnlockFromISR();
+    dmxConfig[id].cfg.stream_ts = chVTGetSystemTimeX();
   }
   
   return;
@@ -112,6 +111,7 @@ void dmxProcessTransferComplete(UARTDriver *uart)
       chSysLockFromISR();
       uartStartSendI(uart, DMX_BUFFER_SIZE, dmxStream[id]);
       chSysUnlockFromISR();
+      dmxConfig[id].cfg.stream_ts = chVTGetSystemTimeX();
 
       break;
     case IDLE:  // Finished sending stream, send break
@@ -170,7 +170,14 @@ void dmxStart(uint8_t id)
   
   switch(dmxConfig[id].cfg.direction)
   {
+    // hmmm when merging self + other
+    // shouldn't we have a temp intermediary
+    // buffer to hold self from USB then merge
+    // before sending straight away ? hmmm
+    case DMX_MERGE: // Merge Output
+    case DMX_MIRROR: // Mirror
     case DMX_OUT: // Output
+      dmxStop(id);
       uartCfg[id].txend2_cb = &dmxProcessTransferComplete;
       
       // Make sure the driver is stopped
@@ -189,15 +196,6 @@ void dmxStart(uint8_t id)
       uartCfg[id].speed = DMX_BAUDRATE;
       
       uartStart(dmxConfig[id].driver, &uartCfg[id]);
-      break;
-    case DMX_MERGE: // Merge Output
-      // setup this driver as output
-      // configure source a to sum source b
-      // place result in dmxStream
-      break;
-    case DMX_MIRROR: // Mirror
-      // setup this driver as output
-      // copy source dmxStream to this dmxStream
       break;
   }
 
@@ -337,8 +335,52 @@ THD_FUNCTION(DMXThread, arg)
     for(i = 0; i < 3; i++)
     {
       // Process Mirror
-      //if(dmxConfig[i].cfg.direction == 
+      if(dmxConfig[i].cfg.direction == DIRECTION_MIRROR)
+      {
+	uint8_t src = dmxConfig[i].cfg.merge_source_a;
+	if(src > 2 || src == i)
+	  continue;
+	else
+	  memcpy(dmxStream[i], dmxStream[src], DMX_BUFFER_SIZE);
+      }
+      else if(dmxConfig[i].cfg.direction == DIRECTION_MERGE)
+      {
+	uint8_t src_a = dmxConfig[i].cfg.merge_source_a;
+	uint8_t src_b = dmxConfig[i].cfg.merge_source_b;
+	
+	if(src_a == src_b)
+	  continue;
+	else if(src_a > 2 || src_b > 2)
+	  continue;
 
+	// if src_a == i or src_b == i then we're merging our
+	// port with other, our being either input or usb
+	
+	// Merge using HTP
+	if(dmxConfig[i].cfg.merge_htp_ltp == MERGE_HTP)
+	{
+	  unsigned int j;
+	  for(j = 0; j < DMX_BUFFER_SIZE; j++)
+	  {
+	    uint8_t val = 0;
+	    if(dmxStream[src_a][j] > dmxStream[src_b][j])
+	      val = dmxStream[src_a][j];
+	    else if(dmxStream[src_b][j] > dmxStream[src_a][j])
+	      val = dmxStream[src_b][j];
+	    else
+	      val = dmxStream[src_a][j];
+
+	    dmxStream[i][j] = val;
+	  }
+	}
+	else if(dmxConfig[i].cfg.merge_htp_ltp == MERGE_LTP)
+	{
+	  if(dmxConfig[src_a].cfg.stream_ts > dmxConfig[src_b].cfg.stream_ts)
+	    memcpy(dmxStream[i], dmxStream[src_a], DMX_BUFFER_SIZE);
+	  else
+	    memcpy(dmxStream[i], dmxStream[src_b], DMX_BUFFER_SIZE);
+	}
+      }
     }
     
     chThdSleepMilliseconds(1);
