@@ -8,6 +8,8 @@
 #define USB_ENDPOINT_IN  (LIBUSB_ENDPOINT_IN  | 1)   /* endpoint address */
 #define USB_ENDPOINT_OUT (LIBUSB_ENDPOINT_OUT | 1)   /* endpoint address */
 
+#define USB_MAX_PACKET_SIZE 64
+
 //Global variables:
 struct libusb_device_handle *devh = NULL;
 static libusb_context *ctx = NULL;
@@ -73,18 +75,18 @@ int main(void)
     int sizeLeft = sizeof(data);
     while(sizeLeft)
     {
-      if(sizeLeft > 60)
+      if(sizeLeft > (USB_MAX_PACKET_SIZE - 3))
       {
-        unsigned char tmp[63] = {0};
+        unsigned char tmp[USB_MAX_PACKET_SIZE] = {0};
 
         tmp[0] = (started == 0) ? 0x11 : 0x12;
-        tmp[1] = 60;
+        tmp[1] = (USB_MAX_PACKET_SIZE - 3);
         tmp[2] = port;
         
         int start = sizeof(data) - sizeLeft;
-        memcpy( &tmp[3], &data[start], 60);
+        memcpy( &tmp[3], &data[start], (USB_MAX_PACKET_SIZE - 3));
         r = libusb_bulk_transfer(devh, USB_ENDPOINT_OUT, tmp, sizeof(tmp), &n, timeout);
-        sizeLeft -= 60;
+        sizeLeft -= (USB_MAX_PACKET_SIZE - 3);
         started = 1;
         
         for(int i = 0; i < sizeof(tmp); i++)

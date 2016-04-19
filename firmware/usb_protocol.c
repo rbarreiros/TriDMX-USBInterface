@@ -31,17 +31,21 @@ uint8_t usbProtoReadCmd(BaseChannel *chn)
     }
 
     uint8_t status = 0;
-    DeviceConfig dev_cfg;
+    DMXPortConfig port_cfg;
+    bool set;
     switch(header->cmd)
     {
       // TODO
       case CMD_SET_MODE:
+        set = configSetPortConfig(header->port, (DMXPortConfig*)&data[3]);
+        chnWriteTimeout(chn, (uint8_t*)&set, 1, MS2ST(25));
         ret = MASK_REPLY_OK;
         break;
 
         // TODO
       case CMD_GET_MODE:
-        chnWriteTimeout(chn, (uint8_t*)&dev_cfg, sizeof(dev_cfg), MS2ST(25));
+        port_cfg = configGetPortConfig(header->port);
+        chnWriteTimeout(chn, (uint8_t *)&port_cfg, sizeof(DMXPortConfig), MS2ST(25));
         ret = MASK_REPLY_OK;
         break;
 

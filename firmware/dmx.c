@@ -1,6 +1,7 @@
 
 #include <hal.h>
 #include <string.h>
+#include "config.h"
 #include "dmx.h"
 #include "usbdrv.h"
 
@@ -14,12 +15,24 @@ volatile uint8_t dmxStatus[3] = {0, 0, 0};
 // from the last used configuration, used to setup DMX Ports
 // when starting
 DMXConfig dmxConfig[3] = {
-  { 0, &UARTD1, { GPIOA, 9, 10 }, {GPIOA, 11 }, { GPIOB, 7 }, { GPIOA, 14 },
-    { 0, 0, 0, 0, 0, 0 }, false, false },
-  { 1, &UARTD2, { GPIOA, 2, 3 }, { GPIOA, 4 }, { GPIOB, 8}, { GPIOA, 6},
-    { 0, 0, 0, 0, 0, 0 }, false, false },
-  { 2, &UARTD3, { GPIOB, 10, 11 }, { GPIOB, 12 }, { GPIOB, 9 }, { GPIOB, 14},
-    { 0, 0, 0, 0, 0, 0 }, false, false }
+  { 0, &UARTD1,
+    { DMX1_UART_PORT, DMX1_UART_PAD_TX, DMX1_UART_PAD_RX },
+    { DMX1_DIRECTION_PORT, DMX1_DIRECTION_PAD },
+    { DMX1_LEDOUT_PORT, DMX1_LEDOUT_PAD },
+    { DMX1_LEDIN_PORT, DMX1_LEDIN_PAD },
+    { 0, 0, 0, 0 }, false, false, 0 },
+  { 1, &UARTD2,
+    { DMX2_UART_PORT, DMX2_UART_PAD_TX, DMX2_UART_PAD_RX },
+    { DMX2_DIRECTION_PORT, DMX2_DIRECTION_PAD },
+    { DMX2_LEDOUT_PORT, DMX2_LEDOUT_PAD },
+    { DMX2_LEDIN_PORT, DMX2_LEDIN_PAD },
+    { 0, 0, 0, 0 }, false, false, 0 },
+  { 2, &UARTD3,
+    { DMX3_UART_PORT, DMX3_UART_PAD_TX, DMX3_UART_PAD_RX },
+    { DMX3_DIRECTION_PORT, DMX3_DIRECTION_PAD },
+    { DMX3_LEDOUT_PORT, DMX3_LEDOUT_PAD },
+    { DMX3_LEDIN_PORT, DMX3_LEDIN_PAD },
+    { 0, 0, 0, 0 }, false, false, 0 }
 };
 
 /**
@@ -83,7 +96,7 @@ void dmxProcessError(UARTDriver *uart, uartflags_t flag)
     chSysLockFromISR();
     uartStartReceiveI(uart, DMX_BUFFER_SIZE, dmxStream[id]);
     chSysUnlockFromISR();
-    dmxConfig[id].cfg.stream_ts = chVTGetSystemTimeX();
+    dmxConfig[id].stream_ts = chVTGetSystemTimeX();
   }
   
   return;
@@ -111,7 +124,7 @@ void dmxProcessTransferComplete(UARTDriver *uart)
       chSysLockFromISR();
       uartStartSendI(uart, DMX_BUFFER_SIZE, dmxStream[id]);
       chSysUnlockFromISR();
-      dmxConfig[id].cfg.stream_ts = chVTGetSystemTimeX();
+      dmxConfig[id].stream_ts = chVTGetSystemTimeX();
 
       break;
     case IDLE:  // Finished sending stream, send break
@@ -174,10 +187,14 @@ void dmxStart(uint8_t id)
     // shouldn't we have a temp intermediary
     // buffer to hold self from USB then merge
     // before sending straight away ? hmmm
-    case DMX_MERGE: // Merge Output
-    case DMX_MIRROR: // Mirror
-    case DMX_OUT: // Output
+    case DIRECTION_MERGE: // Merge Output
+    case DIRECTION_MIRROR: // Mirror
+    case DIRECTION_OUTPUT: // Output
       dmxStop(id);
+
+      palSetPad(dmxConfig[id].dir_pad.port,
+                dmxConfig[id].dir_pad.pad);
+
       uartCfg[id].txend2_cb = &dmxProcessTransferComplete;
       
       // Make sure the driver is stopped
@@ -188,14 +205,19 @@ void dmxStart(uint8_t id)
       uint8_t tmp[1] = {0};
       uartStartSend(dmxConfig[id].driver, 1, &tmp);
       break;
-    case DMX_IN: // Input
+    case DIRECTION_INPUT: // Input
       dmxStop(id);
+      palClearPad(dmxConfig[id].dir_pad.port,
+                  dmxConfig[id].dir_pad.pad);
 
       uartCfg[id].rxend_cb = &dmxProcessReceiveEnd;
       uartCfg[id].rxerr_cb = &dmxProcessError;
       uartCfg[id].speed = DMX_BAUDRATE;
       
       uartStart(dmxConfig[id].driver, &uartCfg[id]);
+      break;
+    case DIRECTION_MAX:
+    default:
       break;
   }
 
@@ -211,9 +233,9 @@ void dmxStop(uint8_t id)
   dmxConfig[id].started = false;
 }
 
-void dmxSetDirection(uint8_t id, eDmxDirection dir)
+bool dmxSetDirection(uint8_t id, eDmxDirection dir)
 {
-  if(dir > DMX_MERGE) return;
+  if(dir >= DIRECTION_MAX) return false;
   
   dmxConfig[id].cfg.direction = dir;
   if(dmxConfig[id].started)
@@ -221,6 +243,8 @@ void dmxSetDirection(uint8_t id, eDmxDirection dir)
     dmxStop(id);
     dmxStart(id);
   }
+
+  return true;
 }
 
 void dmxSetChannel(uint8_t port, uint16_t channel, uint8_t value)
@@ -282,6 +306,36 @@ uint8_t dmxGetChannel(uint8_t port, uint16_t channel)
   if(channel > 512) return 0;
   
   return dmxStream[port][channel];
+}
+
+DMXPortConfig dmxGetPortConfig(uint8_t port)
+{
+  if(port > 2)
+  {
+    DMXPortConfig d = { -1, -1, -1, -1 };
+    return d;
+  }
+  
+  return dmxConfig[port].cfg;
+}
+
+bool dmxSetPortConfig(uint8_t port, DMXPortConfig *cfg)
+{
+  if(port > 2)
+    return false;
+  
+  bool changeDir = false;
+  bool ret = true;
+  
+  if(dmxConfig[port].cfg.direction != cfg->direction)
+    changeDir = true;
+
+  memcpy(&dmxConfig[port].cfg, cfg, sizeof(DMXPortConfig));
+
+  if(changeDir)
+    ret = dmxSetDirection(port, cfg->direction);
+
+  return ret;
 }
 
 // Identify Thread
@@ -375,7 +429,7 @@ THD_FUNCTION(DMXThread, arg)
 	}
 	else if(dmxConfig[i].cfg.merge_htp_ltp == MERGE_LTP)
 	{
-	  if(dmxConfig[src_a].cfg.stream_ts > dmxConfig[src_b].cfg.stream_ts)
+	  if(dmxConfig[src_a].stream_ts > dmxConfig[src_b].stream_ts)
 	    memcpy(dmxStream[i], dmxStream[src_a], DMX_BUFFER_SIZE);
 	  else
 	    memcpy(dmxStream[i], dmxStream[src_b], DMX_BUFFER_SIZE);

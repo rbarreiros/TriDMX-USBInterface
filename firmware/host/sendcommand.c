@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     uint8_t tmp[64];
 
     tmp[0] = command;
-    tmp[1] = (argc - 2) + 2;
+    tmp[1] = (argc - 3);
     memcpy(&tmp[2], data, (argc - 2));
 
     r = libusb_bulk_transfer(devh, USB_ENDPOINT_OUT, tmp, (argc - 2) + 2, &n, timeout);

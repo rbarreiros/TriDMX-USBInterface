@@ -15,7 +15,7 @@ typedef struct
 
 #define CMD_NOP 0x00
 
-#define CMD_SET_MODE        0x01 // [CMD] [LEN] [PORT] [MODE]
+#define CMD_SET_MODE        0x01 // [CMD] [LEN] [PORT] DMXPortConfig struct
 #define CMD_GET_MODE        0x02 // [CMD] [LEN] [PORT] returns DMXPortConfig struct
 #define CMD_PORT_ID         0x03 // [CMD] [LEN] [PORT]
 

@@ -1,43 +1,70 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#include <stdint.h>
+#include <hal.h>
+#include "dmx.h"
 
-// Port Modes
+// *** DMX Configuration *** //
 
-#define DIRECTION_OUTPUT 0x00
-#define DIRECTION_INPUT  0x01
-#define DIRECTION_MERGE  0x02
-#define DIRECTION_MIRROR 0x03
+// DMX 1
 
-#define MERGE_LTP 0x00
-#define MERGE_HTP 0x01
+#define DMX1_UART_PORT      GPIOA
+#define DMX1_UART_PAD_TX    9
+#define DMX1_UART_PAD_RX    10
 
-#define SOURCE_0   0x00
-#define SOURCE_1   0x01
-#define SOURCE_2   0x02
-#define SOURCE_USB 0x03
+#define DMX1_DIRECTION_PORT GPIOA
+#define DMX1_DIRECTION_PAD  11
 
+#define DMX1_LEDOUT_PORT    GPIOB
+#define DMX1_LEDOUT_PAD     7
+
+#define DMX1_LEDIN_PORT     GPIOA
+#define DMX1_LEDIN_PAD      14
+
+// DMX 2
+
+#define DMX2_UART_PORT      GPIOA
+#define DMX2_UART_PAD_TX    2
+#define DMX2_UART_PAD_RX    3
+
+#define DMX2_DIRECTION_PORT GPIOA
+#define DMX2_DIRECTION_PAD  4
+
+#define DMX2_LEDOUT_PORT    GPIOB
+#define DMX2_LEDOUT_PAD     8
+
+#define DMX2_LEDIN_PORT     GPIOA
+#define DMX2_LEDIN_PAD      6
+
+// DMX 3
+
+#define DMX3_UART_PORT      GPIOB
+#define DMX3_UART_PAD_TX    10
+#define DMX3_UART_PAD_RX    11
+
+#define DMX3_DIRECTION_PORT GPIOB
+#define DMX3_DIRECTION_PAD  12
+
+#define DMX3_LEDOUT_PORT    GPIOB
+#define DMX3_LEDOUT_PAD     9
+
+#define DMX3_LEDIN_PORT     GPIOB
+#define DMX3_LEDIN_PAD      14
+
+
+// *** NO USER SERVICEABLE PARTS BELOW! *** //
+
+// Whole device configuration
+// used to save config in eeprom
 typedef struct
 {
-  uint8_t id;             // port id
-  uint8_t direction;      // direction:
-                          // 0x00 Output,
-                          // 0x01 Input
-                          // 0x02 Merge Output
-                          // 0x03 Mirror
-  uint8_t merge_source_a; // merge source a - port id 0,1,2 (except self ofc) or 3 - USB
-  uint8_t merge_source_b; // merge source b
-  uint8_t merge_htp_ltp;  // merge method, 0x00 - htp, 0x01 ltp
-  uint32_t stream_ts;     // Timestamp (system tick) of the last dmxStream update (sent or received)
-} DMXPortConfig;
-
-typedef struct
-{
-  DMXPortConfig port0;
-  DMXPortConfig port1;
-  DMXPortConfig port2;
+  DMXPortConfig port[3];
   // ... Other future options
 } DeviceConfig;
+
+
+void configLoad(void);
+DMXPortConfig configGetPortConfig(uint8_t port);
+bool configSetPortConfig(uint8_t port, DMXPortConfig *cfg);
 
 #endif
