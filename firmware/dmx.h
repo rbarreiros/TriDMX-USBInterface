@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define DMX_THREAD_SIZE 128
+#define DMX_THREAD_SIZE 256
 
 #define DMX_BUFFER_SIZE 513
 #define DMX_BAUDRATE    250000 // 375000

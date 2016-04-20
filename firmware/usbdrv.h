@@ -7,8 +7,6 @@ extern const USBConfig usbcfg;
 extern SerialUSBConfig serusbcfg;
 extern SerialUSBDriver SDU1;
 
-extern bool gDoShutdown;
-
 void Get_SerialNum(void);
 
 #endif

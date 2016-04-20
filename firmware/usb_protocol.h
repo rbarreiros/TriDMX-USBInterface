@@ -50,4 +50,6 @@ typedef struct
 extern THD_WORKING_AREA(waUSB, USB_THREAD_SIZE);
 THD_FUNCTION(USBThread, arg);
 
+extern bool gDoShutdown;
+
 #endif

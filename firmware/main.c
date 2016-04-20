@@ -38,21 +38,23 @@ int __attribute__((noreturn)) main(void) {
     // Shutdown and reset
 
     // Wait a bit before shutting everything down
-    //chThdSleepMilliseconds(500);
+    chThdSleepMilliseconds(100);
+
+    // Stop DMX Thread
+    chThdTerminate(dmxThread);
+    chThdWait(dmxThread);
 
     // Stop USB Thread
     chThdTerminate(usbThread);
     chThdWait(usbThread);
 
-    // Stop DMX Thread
-    chThdTerminate(dmxThread);
-    chThdWait(dmxThread);
-    
-    /*
+    chThdSleepMilliseconds(1500);
+
     chSysDisable();
     chSysEnable();
     chSysDisable();
 
+    /*
     //RCC->CIR; // Disable ALL Interrupts
     SysTick->CTRL = 0;
     SysTick->LOAD = 0;
@@ -70,7 +72,7 @@ int __attribute__((noreturn)) main(void) {
 
     //SCB->AIRCR = (0x5FA << SCB_AIRCR_VECTKEY_Pos) |
     //    SCB_AIRCR_SYSRESETREQ;
-    NVIC_SystemReset();
     */
+    NVIC_SystemReset();
   }
 }

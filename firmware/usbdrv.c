@@ -27,8 +27,6 @@ SerialUSBDriver SDU1;
 
 //////////////////////////////////////// 
 
-bool gDoShutdown = 0;
-
 struct usb_request {
   uint8_t  bmRequestType;
   uint8_t  bRequest;

@@ -6,6 +6,8 @@
 #include "usb_protocol.h"
 #include "dmx.h"
 
+bool gDoShutdown = false;
+
 uint8_t usbProtoReadCmd(BaseChannel *chn)
 {
   cmd_header_t *header;
@@ -78,6 +80,12 @@ uint8_t usbProtoReadCmd(BaseChannel *chn)
       case CMD_NOP:
         ret = MASK_REPLY_OK;
         break;
+
+      case CMD_BOOTLOADER:
+        // Go into bootloader
+        gDoShutdown = true;
+        ret = MASK_REPLY_OK;
+        break;
         
       default:
         ret = err | MASK_ERR_NOT_IMPLEMENTED;
@@ -110,10 +118,11 @@ THD_FUNCTION(USBThread, arg)
   while(USBD1.state != USB_READY) chThdSleepMilliseconds(10);
   while(SDU1.state != SDU_READY) chThdSleepMilliseconds(10);
 
-  //uint8_t ret;
   while(!chThdShouldTerminateX())
   {
-    chEvtWaitAny(ALL_EVENTS);
+    // Needs to timeout or else it hangs waiting for an
+    // event when we wish to terminate the thread!
+    chEvtWaitAnyTimeout(ALL_EVENTS, MS2ST(100));
     chSysLock();
     flags = chEvtGetAndClearFlagsI(&el1);
     chSysUnlock();
@@ -123,4 +132,6 @@ THD_FUNCTION(USBThread, arg)
   }
 
   // Stop USB here
+  usbStop(serusbcfg.usbp);
+  usbDisconnectBus(serusbcfg.usbp);
 }
