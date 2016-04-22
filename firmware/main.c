@@ -48,31 +48,12 @@ int __attribute__((noreturn)) main(void) {
     chThdTerminate(usbThread);
     chThdWait(usbThread);
 
-    chThdSleepMilliseconds(1500);
-
     chSysDisable();
     chSysEnable();
     chSysDisable();
 
-    /*
-    //RCC->CIR; // Disable ALL Interrupts
-    SysTick->CTRL = 0;
-    SysTick->LOAD = 0;
-    SysTick->VAL = 0;
-
-    // Disable
-    rccDisablePWRInterface(FALSE);
-    rccDisableBKPInterface(FALSE);
-
-    // Reset All peripherals
-    rccResetAPB1(0xFFFFFFFF);
-    rccResetAPB2(0xFFFFFFFF);
-
-    RCC->CFGR = 0;
-
-    //SCB->AIRCR = (0x5FA << SCB_AIRCR_VECTKEY_Pos) |
-    //    SCB_AIRCR_SYSRESETREQ;
-    */
-    NVIC_SystemReset();
+    // Reboot
+    SCB->AIRCR = (0x5FA << SCB_AIRCR_VECTKEY_Pos) |
+        SCB_AIRCR_SYSRESETREQ;
   }
 }

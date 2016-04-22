@@ -271,7 +271,7 @@ int main(void)
 
         for (i = 0; i < 8000; i++)   /* Wait a bit. */
           __asm__("nop");
-        
+
         // Check Button for Boot
 	rcc_periph_clock_enable(RCC_GPIOA);
 
@@ -297,13 +297,24 @@ int main(void)
 		      GPIO_CNF_OUTPUT_PUSHPULL, GPIO13);
 	gpio_set(GPIOC, GPIO13);
 
+        // Force USB Re-enumeration
+        gpio_clear(GPIOA, 11);
+        gpio_clear(GPIOA, 12);
+        gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
+		      GPIO_CNF_OUTPUT_PUSHPULL, GPIO11);
+        gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
+		      GPIO_CNF_OUTPUT_PUSHPULL, GPIO12);
+
+        for (i = 0; i < 8000; i++)   /* Wait a bit. */
+          __asm__("nop");
+        
 	usbd_dev = usbd_init(&st_usbfs_v1_usb_driver, &dev, &config, usb_strings, 4, usbd_control_buffer, sizeof(usbd_control_buffer));
         usbd_disconnect(usbd_dev, true);
         for (i = 0; i < 8000; i++)   /* Wait a bit. */
           __asm__("nop");
         usbd_disconnect(usbd_dev, false);
 	usbd_register_set_config_callback(usbd_dev, usbdfu_set_config);
-
+        
 	gpio_clear(GPIOC, GPIO13);
 
         //i = 0;

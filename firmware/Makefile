@@ -4,7 +4,7 @@
 #
 
 # En/disable usage of maplemini bootloader support
-USE_BOOTLOADER ?= 0
+USE_BOOTLOADER ?= 1
 
 LOAD_ADDRESS = 0x08002000
 CORTEX_VTOR_INIT = 0x2000
@@ -251,7 +251,7 @@ $(BUILD_NUMBER_FILE): $(CSRC)
 	@echo $$(($$(cat $(BUILD_NUMBER_FILE)) + 1)) > $(BUILD_NUMBER_FILE)
 
 boot: build/$(PROJECT).bin
-	#(sudo ./tools/usbtool -v 0x0483 -p 0xfedc control out vendor device 0 0 0; sleep 1) || true
+	sudo ./host/sendcommand 254 0 ; sleep 3
 	sudo dfu-util -d 0483:df11 -a 0 -s $(LOAD_ADDRESS):leave -D build/$(PROJECT).bin
 
 flash: build/$(PROJECT).bin

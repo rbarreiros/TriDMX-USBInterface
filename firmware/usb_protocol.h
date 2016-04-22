@@ -17,7 +17,8 @@ typedef struct
 
 #define CMD_SET_MODE        0x01 // [CMD] [LEN] [PORT] DMXPortConfig struct
 #define CMD_GET_MODE        0x02 // [CMD] [LEN] [PORT] returns DMXPortConfig struct
-#define CMD_PORT_ID         0x03 // [CMD] [LEN] [PORT]
+#define CMD_PORT_ID         0x03 // [CMD] [LEN] [PORT] Len = 0
+#define CMD_GET_FIRMWARE    0x04 // [CMD] [LEN]        Len = 0
 
 #define CMD_DMX_OUT_UPDATE  0x10 // [CMD] [LEN] [PORT] [CH] [VAL] ... [CH] [VAL] (for low channel count updates)
 #define CMD_DMX_OUT_STREAM  0x11 // [CMD] [LEN] [PORT] [CH1_VAL] [CH2_VAL] [CH3_VAL]  (First 512 channels)

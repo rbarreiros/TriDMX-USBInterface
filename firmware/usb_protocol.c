@@ -5,6 +5,7 @@
 #include "usbdrv.h"
 #include "usb_protocol.h"
 #include "dmx.h"
+#include "version.h"
 
 bool gDoShutdown = false;
 
@@ -37,22 +38,22 @@ uint8_t usbProtoReadCmd(BaseChannel *chn)
     bool set;
     switch(header->cmd)
     {
-      // TODO
       case CMD_SET_MODE:
         set = configSetPortConfig(header->port, (DMXPortConfig*)&data[3]);
         chnWriteTimeout(chn, (uint8_t*)&set, 1, MS2ST(25));
-        ret = MASK_REPLY_OK;
         break;
 
-        // TODO
       case CMD_GET_MODE:
         port_cfg = configGetPortConfig(header->port);
         chnWriteTimeout(chn, (uint8_t *)&port_cfg, sizeof(DMXPortConfig), MS2ST(25));
-        ret = MASK_REPLY_OK;
         break;
 
       case CMD_PORT_ID:
         dmxIdentify(header->port);
+        break;
+
+      case CMD_GET_FIRMWARE:
+        chnWriteTimeout(chn, (uint8_t*)FIRMWARE_REVISION, 11, MS2ST(25));
         break;
         
       case CMD_DMX_OUT_STREAM:
@@ -69,22 +70,18 @@ uint8_t usbProtoReadCmd(BaseChannel *chn)
         // TODO
       case CMD_DMX_IN_STREAM:
       case CMD_DMX_IN_STRCONT:
-        ret = MASK_REPLY_OK;
         break;
 
         // TODO
       case CMD_DMX_IN_UPDATE:
-        ret = MASK_REPLY_OK;
         break;
 
       case CMD_NOP:
-        ret = MASK_REPLY_OK;
         break;
 
       case CMD_BOOTLOADER:
         // Go into bootloader
         gDoShutdown = true;
-        ret = MASK_REPLY_OK;
         break;
         
       default:
@@ -109,7 +106,7 @@ THD_FUNCTION(USBThread, arg)
   sduStart(&SDU1, &serusbcfg);
 
   usbDisconnectBus(serusbcfg.usbp);
-  chThdSleepMilliseconds(1500);
+  chThdSleepMilliseconds(500);
   usbStart(serusbcfg.usbp, &usbcfg);
   usbConnectBus(serusbcfg.usbp);
 
@@ -118,6 +115,8 @@ THD_FUNCTION(USBThread, arg)
   while(USBD1.state != USB_READY) chThdSleepMilliseconds(10);
   while(SDU1.state != SDU_READY) chThdSleepMilliseconds(10);
 
+  palSetPadMode(USB_STATUS_LED_PORT, USB_STATUS_LED_PAD, PAL_MODE_OUTPUT_PUSHPULL);
+  
   while(!chThdShouldTerminateX())
   {
     // Needs to timeout or else it hangs waiting for an
@@ -128,7 +127,10 @@ THD_FUNCTION(USBThread, arg)
     chSysUnlock();
 
     if (flags & CHN_INPUT_AVAILABLE)
+    {
       usbProtoReadCmd((BaseChannel *)&SDU1);
+      palTogglePad(USB_STATUS_LED_PORT, USB_STATUS_LED_PAD);
+    }
   }
 
   // Stop USB here

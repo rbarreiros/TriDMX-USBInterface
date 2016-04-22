@@ -8,7 +8,10 @@
 
 // WARNING WARNING WARNING WARNING WARNING WARNING WARNING //
 //
-// DO NOT USE GPIOA 11 AND 12 THEY ARE USED IN USB         // 
+// DO NOT USE GPIOA 11 AND 12 THEY ARE USED IN USB         //
+// DO NOT USE GPIOA 1 BOOTLOADER TRIGGER PIN               //
+// DO NOT USE GPIOB 2 - BOOT1                              //
+// DO NOT USE GPIOB 3 and 4 - JTDO and JNTRST recpectively //
 //
 // WARNING WARNING WARNING WARNING WARNING WARNING WARNING //
 
@@ -19,12 +22,12 @@
 #define DMX1_UART_PAD_RX    10
 
 #define DMX1_DIRECTION_PORT GPIOA
-#define DMX1_DIRECTION_PAD  13
+#define DMX1_DIRECTION_PAD  8
 
 #define DMX1_LEDOUT_PORT    GPIOB
-#define DMX1_LEDOUT_PAD     7
+#define DMX1_LEDOUT_PAD     13
 
-#define DMX1_LEDIN_PORT     GPIOA
+#define DMX1_LEDIN_PORT     GPIOB
 #define DMX1_LEDIN_PAD      14
 
 // DMX 2
@@ -37,10 +40,10 @@
 #define DMX2_DIRECTION_PAD  4
 
 #define DMX2_LEDOUT_PORT    GPIOB
-#define DMX2_LEDOUT_PAD     8
+#define DMX2_LEDOUT_PAD     6
 
-#define DMX2_LEDIN_PORT     GPIOA
-#define DMX2_LEDIN_PAD      6
+#define DMX2_LEDIN_PORT     GPIOB
+#define DMX2_LEDIN_PAD      7
 
 // DMX 3
 
@@ -52,11 +55,15 @@
 #define DMX3_DIRECTION_PAD  12
 
 #define DMX3_LEDOUT_PORT    GPIOB
-#define DMX3_LEDOUT_PAD     9
+#define DMX3_LEDOUT_PAD     8
 
 #define DMX3_LEDIN_PORT     GPIOB
-#define DMX3_LEDIN_PAD      14
+#define DMX3_LEDIN_PAD      9
 
+// Board LEDS
+
+#define USB_STATUS_LED_PORT GPIOC
+#define USB_STATUS_LED_PAD  13
 
 // *** NO USER SERVICEABLE PARTS BELOW! *** //
 

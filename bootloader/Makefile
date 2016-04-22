@@ -31,7 +31,7 @@ SIZE = $(CROSS_COMPILE)size
 #BOOTLOADER = dfu-util
 #BOOTLOADER_FLAGS = -a 0 --dfuse-address 0x08000000:leave
 
-BOOTLOADER = ../stlink/st-flash
+BOOTLOADER = ../../stlink/st-flash
 BOOTLOADER_FLAGS = --reset write $(NAME)_text.bin 0x8000000
 
 

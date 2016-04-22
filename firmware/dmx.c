@@ -156,6 +156,10 @@ void dmxInit(uint8_t id)
   palSetPadMode(dmxConfig[id].ledout_pad.port, dmxConfig[id].ledout_pad.pad, PAL_MODE_OUTPUT_PUSHPULL);
   palSetPadMode(dmxConfig[id].ledin_pad.port, dmxConfig[id].ledin_pad.pad, PAL_MODE_OUTPUT_PUSHPULL);
 
+  palSetPad(dmxConfig[id].dir_pad.port, dmxConfig[id].dir_pad.pad);
+  palClearPad(dmxConfig[id].ledin_pad.port, dmxConfig[id].ledin_pad.pad);
+  palClearPad(dmxConfig[id].ledout_pad.port, dmxConfig[id].ledout_pad.pad);
+  
   // Start and stop Uart to setup the BRR's
   uartStart(dmxConfig[id].driver, &uartCfg[id]);
   if(dmxBRR == 0) dmxBRR = dmxConfig[id].driver->usart->BRR;
@@ -207,6 +211,7 @@ void dmxStart(uint8_t id)
       break;
     case DIRECTION_INPUT: // Input
       dmxStop(id);
+
       palClearPad(dmxConfig[id].dir_pad.port,
                   dmxConfig[id].dir_pad.pad);
 
@@ -343,13 +348,21 @@ static THD_FUNCTION(DMXIDThread, arg)
 {
   uint8_t id = *((uint8_t*)arg);
 
-  dmxConfig[id].id_enabled = true;  
+  dmxConfig[id].id_enabled = true;
+  
+  palClearPad(dmxConfig[id].ledout_pad.port, dmxConfig[id].ledout_pad.pad);
+  palClearPad(dmxConfig[id].ledin_pad.port, dmxConfig[id].ledin_pad.pad);
+
   while(!chThdShouldTerminateX())
   {
     palTogglePad(dmxConfig[id].ledout_pad.port, dmxConfig[id].ledout_pad.pad);
     palTogglePad(dmxConfig[id].ledin_pad.port, dmxConfig[id].ledin_pad.pad);
     chThdSleepMilliseconds(500);        
   }
+
+  palClearPad(dmxConfig[id].ledout_pad.port, dmxConfig[id].ledout_pad.pad);
+  palClearPad(dmxConfig[id].ledin_pad.port, dmxConfig[id].ledin_pad.pad);
+
   dmxConfig[id].id_enabled = false;
 }
 
