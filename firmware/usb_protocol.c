@@ -70,8 +70,9 @@ uint8_t usbProtoReadCmd(BaseChannel *chn)
         // TODO
       case CMD_DMX_IN_STREAM:
       case CMD_DMX_IN_STRCONT:
+        dmxGetStream(header->port, &data[3], 60);
+        chnWriteTimeout(chn, data, 60, MS2ST(25));
         break;
-
         // TODO
       case CMD_DMX_IN_UPDATE:
         break;

@@ -297,12 +297,12 @@ uint8_t dmxSetStream(uint8_t port, uint8_t *data, uint8_t len, uint8_t start)
   return 0;
 }
 
-void dmxGetStream(uint8_t port, uint8_t *data, uint8_t len, uint8_t start)
+uint8_t dmxGetStream(uint8_t port, uint8_t *data, uint8_t len)
 {
-  (void)port;
-  (void)data;
-  (void)len;
-  (void)start;
+  memset(data, 0, len);
+  memcpy(data, dmxStream[port], len);
+  
+  return 0;
 }
 
 uint8_t dmxGetChannel(uint8_t port, uint16_t channel)

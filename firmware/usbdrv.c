@@ -1,6 +1,5 @@
 #include <ch.h>
 #include <hal.h>
-#include <serial_usb.h>
 
 // TODO - Change the VID/PID to proper values 
 

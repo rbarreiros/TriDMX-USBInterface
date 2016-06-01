@@ -79,7 +79,7 @@ void dmxSetChannel(uint8_t port, uint16_t channel, uint8_t value);
 
 uint8_t dmxUpdate(uint8_t port, uint8_t *data, uint8_t len);
 uint8_t dmxSetStream(uint8_t port, uint8_t *data, uint8_t len, uint8_t start);
-void dmxGetStream(uint8_t port, uint8_t *data, uint8_t len, uint8_t start);
+uint8_t dmxGetStream(uint8_t port, uint8_t *data, uint8_t len);
 uint8_t dmxGetChannel(uint8_t port, uint16_t channel);
 void dmxIdentify(uint8_t port);
 DMXPortConfig dmxGetPortConfig(uint8_t port);
