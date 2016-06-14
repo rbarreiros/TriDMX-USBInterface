@@ -53,7 +53,6 @@ int __attribute__((noreturn)) main(void) {
     chSysDisable();
 
     // Reboot
-    SCB->AIRCR = (0x5FA << SCB_AIRCR_VECTKEY_Pos) |
-        SCB_AIRCR_SYSRESETREQ;
+    NVIC_SystemReset();
   }
 }
