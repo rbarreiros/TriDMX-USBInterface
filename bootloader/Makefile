@@ -84,7 +84,7 @@ $(NAME).elf: $(OBJS)
 
 clean:
 	rm -f $(NAME).bin $(NAME).elf $(NAME).hex
-	rm -f $(NAME)_text.{bin,hex}
+	rm -f $(NAME)_text.bin $(NAME)_text.hex
 	rm -f $(OBJS) $(OBJS:.o=.d)
 	rm -f *~
 

@@ -267,7 +267,8 @@ int main(void)
 {
 	usbd_device *usbd_dev;
         int i;
-        //int timeout;
+        int timeout;
+        int soft_reset;
 
         for (i = 0; i < 8000; i++)   /* Wait a bit. */
           __asm__("nop");
@@ -275,28 +276,38 @@ int main(void)
         // Check Button for Boot
 	rcc_periph_clock_enable(RCC_GPIOA);
 
-	if (!gpio_get(GPIOA, GPIO1)) {
-		/* Boot the application if it's valid. */
-		if ((*(volatile uint32_t *)APP_ADDRESS & 0x2FFE0000) == 0x20000000) {
-                        rcc_periph_clock_disable(RCC_GPIOA);
-			/* Set vector table base address. */
-			SCB_VTOR = APP_ADDRESS & 0xFFFF;
-			/* Initialise master stack pointer. */
-			asm volatile("msr msp, %0"::"g"
-				     (*(volatile uint32_t *)APP_ADDRESS));
-			/* Jump to application. */
-			(*(void (**)())(APP_ADDRESS + 4))();
-		}
-	}
-
-	rcc_clock_setup_in_hsi_out_48mhz();
+        soft_reset = RCC_CSR & RCC_CSR_SFTRSTF;
+        
+        if( !(soft_reset) ) // Did we reboot into boot ? soft reset flags
+        {
+          if (!gpio_get(GPIOA, GPIO1)) // Did someone press the boot button ?
+          {
+            /* Boot the application if it's valid. */
+            if ((*(volatile uint32_t *)APP_ADDRESS & 0x2FFE0000) == 0x20000000)
+            {
+              rcc_periph_clock_disable(RCC_GPIOA);
+              /* Set vector table base address. */
+              SCB_VTOR = APP_ADDRESS & 0xFFFF;
+              /* Initialise master stack pointer. */
+              asm volatile("msr msp, %0"::"g"
+                           (*(volatile uint32_t *)APP_ADDRESS));
+              /* Jump to application. */
+              (*(void (**)())(APP_ADDRESS + 4))();
+            }
+          }
+        }
+          
+        rcc_clock_setup_in_hse_8mhz_out_72mhz();
 
 	rcc_periph_clock_enable(RCC_GPIOC);
 
 	gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_50_MHZ,
 		      GPIO_CNF_OUTPUT_PUSHPULL, GPIO13);
-	gpio_set(GPIOC, GPIO13);
+        gpio_set(GPIOC, GPIO13);
 
+        // Remove Soft Reset Flags
+        RCC_CSR |= RCC_CSR_RMVF;
+        
         // Force USB Re-enumeration
         gpio_clear(GPIOA, 11);
         gpio_clear(GPIOA, 12);
@@ -317,22 +328,23 @@ int main(void)
         
 	gpio_clear(GPIOC, GPIO13);
 
-        //i = 0;
-        //timeout = 0;
+        i = 0;
+        timeout = 0;
 	while (1)
         {
           usbd_poll(usbd_dev);
-          /*
-          if (i++ >= 80000) {
-            i = 0;
-            if (usbdfu_state == STATE_DFU_IDLE &&
-                ((*(volatile uint32_t *)APP_ADDRESS & 0x2FFE0000) == 0x20000000)) {
-              if (timeout++ > 13)
-                leave_bootloader(usbd_dev);
-            } else {
-              timeout = 0;
+          if(!soft_reset)
+          {
+            if (i++ >= 80000) {
+              i = 0;
+              if (usbdfu_state == STATE_DFU_IDLE &&
+                  ((*(volatile uint32_t *)APP_ADDRESS & 0x2FFE0000) == 0x20000000)) {
+                if (timeout++ > 13)
+                  leave_bootloader(usbd_dev);
+              } else {
+                timeout = 0;
+              }
             }
           }
-          */
         }
 }
