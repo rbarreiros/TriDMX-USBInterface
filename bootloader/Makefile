@@ -15,9 +15,6 @@ NAME = usbdfu
 CPU = cortex-m3
 MCU = STM32F1
 
-LFUSE = 0xef
-HFUSE = 0xdd
-
 # this needs libopencm and a cross-compiler with newlib support
 LIBOPENCM3 = ../../libopencm3
 LDSCRIPT = stm32-f103.ld
@@ -34,9 +31,8 @@ SIZE = $(CROSS_COMPILE)size
 BOOTLOADER = ../../stlink/st-flash
 BOOTLOADER_FLAGS = --reset write $(NAME)_text.bin 0x8000000
 
-
-CFLAGS  = -Os -g -Wall -Wextra -Wimplicit-function-declaration -Wredundant-decls -Wmissing-prototypes -Wstrict-prototypes -Wundef -Wshadow
-CFLAGS += -I$(LIBOPENCM3)/include -fno-common -mthumb -mcpu=$(CPU) -msoft-float -MD -D$(MCU)
+CFLAGS  = -Os -g3 -Wall -Wextra -Wimplicit-function-declaration -Wredundant-decls -Wmissing-prototypes -Wstrict-prototypes -Wundef -Wshadow
+CFLAGS += -I$(LIBOPENCM3)/include -fno-common -mthumb -mcpu=$(CPU) -msoft-float -MD -D$(MCU) --data-sections --function-sections
 ASFLAGS =
 LDFLAGS  = -lopencm3_stm32f1 --static -Wl,--start-group -lc -lgcc -lnosys -Wl,--end-group -L$(LIBOPENCM3)/lib -T$(LDSCRIPT) -nostartfiles
 LDFLAGS += -Wl,--gc-sections -mthumb -mcpu=cortex-m3 -msoft-float -mfix-cortex-m3-ldrd

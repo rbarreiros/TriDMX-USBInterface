@@ -24,15 +24,21 @@
 #include <libopencm3/cm3/scb.h>
 #include <libopencm3/usb/usbd.h>
 #include <libopencm3/usb/dfu.h>
+#include <libopencm3/stm32/desig.h>
+
+#define DEV_SERIAL "NSERIAL"
+static const char
+dev_serial[] __attribute__((section (".devserial"))) = DEV_SERIAL;
 
 #define APP_ADDRESS	0x08002000
+#define SECTOR_SIZE     2048
 
 /* Commands sent with wBlockNum == 0 as per ST implementation. */
 #define CMD_SETADDR	0x21
 #define CMD_ERASE	0x41
 
 /* We need a special large control buffer for this device: */
-uint8_t usbd_control_buffer[1024];
+uint8_t usbd_control_buffer[SECTOR_SIZE];
 
 static enum dfu_state usbdfu_state = STATE_DFU_IDLE;
 
@@ -65,7 +71,7 @@ const struct usb_dfu_descriptor dfu_function = {
 	.bDescriptorType = DFU_FUNCTIONAL,
 	.bmAttributes = USB_DFU_CAN_DOWNLOAD | USB_DFU_WILL_DETACH,
 	.wDetachTimeout = 255,
-	.wTransferSize = 1024,
+	.wTransferSize = SECTOR_SIZE,
 	.bcdDFUVersion = 0x011A,
 };
 
@@ -105,10 +111,12 @@ const struct usb_config_descriptor config = {
 	.interface = ifaces,
 };
 
+static char serial_no[24+1];
+
 static const char *usb_strings[] = {
 	"Rui Barreiros",
-	"DFU Bootloader",
-	"20160301001",
+	"TriDMX Bootloader",
+	serial_no,
 	/* This string is used by ST Microelectronics' DfuSe utility. */
 	"@Internal Flash   /0x08000000/8*001Ka,56*001Kg",
 };
@@ -318,6 +326,8 @@ int main(void)
 
         for (i = 0; i < 8000; i++)   /* Wait a bit. */
           __asm__("nop");
+
+        desig_get_unique_id_as_string(serial_no, 25);
         
 	usbd_dev = usbd_init(&st_usbfs_v1_usb_driver, &dev, &config, usb_strings, 4, usbd_control_buffer, sizeof(usbd_control_buffer));
         usbd_disconnect(usbd_dev, true);

@@ -174,10 +174,10 @@ static const uint8_t vcom_string2[] = {
  */
 //static const uint8_t vcom_string3[] = {
 static uint8_t vcom_string3[] = {
-  USB_DESC_BYTE(28), // bLength.
+  USB_DESC_BYTE(50), // bLength.
   USB_DESC_BYTE(USB_DESCRIPTOR_STRING),     // bDescriptorType.
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 /*
@@ -348,12 +348,13 @@ void Get_SerialNum(void)
   Device_Serial1 = *(uint32_t*)ID2;
   Device_Serial2 = *(uint32_t*)ID3;
 
-  Device_Serial0 += Device_Serial2;
+  //Device_Serial0 += Device_Serial2;
 
   if (Device_Serial0 != 0)
   {
     IntToUnicode (Device_Serial0, &vcom_string3[2] , 8);
-    IntToUnicode (Device_Serial1, &vcom_string3[18], 4);
+    IntToUnicode (Device_Serial1, &vcom_string3[18], 8);
+    IntToUnicode (Device_Serial2, &vcom_string3[34], 8);
   }
 }
 
