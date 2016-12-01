@@ -26,6 +26,7 @@
 /* Includes ------------------------------------------------------------------*/
 //#include "stm32f10x.h"
 #include "hal.h"
+#include "config.h"
 
 /* Exported constants --------------------------------------------------------*/
 /* Define the STM32F10Xxx Flash page size depending on the used STM32 device */
@@ -66,7 +67,7 @@
 #define PAGE_FULL               ((uint8_t)0x80)
 
 /* Variables' number */
-#define NumbOfVar               ((uint8_t)0x03)
+#define NumbOfVar               ((uint8_t)sizeof(DeviceConfig)/2)
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/

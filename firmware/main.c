@@ -8,6 +8,7 @@
 #include "usbdrv.h"
 #include "usb_protocol.h"
 #include "dmx.h"
+#include "config.h"
 
 /*
  * Application entry point.
@@ -19,6 +20,9 @@ int __attribute__((noreturn)) main(void) {
 
   Get_SerialNum();
 
+  // Load configuration
+  configLoad();
+  
   while(true)
   {
     halInit();

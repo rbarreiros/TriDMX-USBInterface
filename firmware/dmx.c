@@ -20,19 +20,19 @@ DMXConfig dmxConfig[3] = {
     { DMX1_DIRECTION_PORT, DMX1_DIRECTION_PAD },
     { DMX1_LEDOUT_PORT, DMX1_LEDOUT_PAD },
     { DMX1_LEDIN_PORT, DMX1_LEDIN_PAD },
-    { 0, 0, 0, 0 }, false, false, 0 },
+    { DIRECTION_OUTPUT, SOURCE_USB, SOURCE_PORT2, MERGE_HTP, SOURCE_USB }, false, false, 0 },
   { 1, &UARTD2,
     { DMX2_UART_PORT, DMX2_UART_PAD_TX, DMX2_UART_PAD_RX },
     { DMX2_DIRECTION_PORT, DMX2_DIRECTION_PAD },
     { DMX2_LEDOUT_PORT, DMX2_LEDOUT_PAD },
     { DMX2_LEDIN_PORT, DMX2_LEDIN_PAD },
-    { 0, 0, 0, 0 }, false, false, 0 },
+    { DIRECTION_OUTPUT, SOURCE_USB, SOURCE_PORT3, MERGE_HTP, SOURCE_USB }, false, false, 0 },
   { 2, &UARTD3,
     { DMX3_UART_PORT, DMX3_UART_PAD_TX, DMX3_UART_PAD_RX },
     { DMX3_DIRECTION_PORT, DMX3_DIRECTION_PAD },
     { DMX3_LEDOUT_PORT, DMX3_LEDOUT_PAD },
     { DMX3_LEDIN_PORT, DMX3_LEDIN_PAD },
-    { 0, 0, 0, 0 }, false, false, 0 }
+    { DIRECTION_OUTPUT, SOURCE_USB, SOURCE_PORT1, MERGE_HTP, SOURCE_USB }, false, false, 0 }
 };
 
 /**
@@ -317,7 +317,7 @@ DMXPortConfig dmxGetPortConfig(uint8_t port)
 {
   if(port > 2)
   {
-    DMXPortConfig d = { -1, -1, -1, -1 };
+    DMXPortConfig d = { -1, -1, -1, -1, -1 };
     return d;
   }
   

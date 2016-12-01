@@ -9,15 +9,6 @@
 #define DMX_BAUDRATE    250000 // 375000
 #define BREAK_BAUDRATE  75000  // 110000
 
-// Port Modes
-
-#define MERGE_LTP 0x00
-#define MERGE_HTP 0x01
-
-#define SOURCE_0   0x00
-#define SOURCE_1   0x01
-#define SOURCE_2   0x02
-
 // DMX Direction
 typedef enum
 {
@@ -28,6 +19,22 @@ typedef enum
   DIRECTION_MAX
 } eDmxDirection;
 
+typedef enum
+{
+  SOURCE_USB = 0,
+  SOURCE_PORT1,
+  SOURCE_PORT2,
+  SOURCE_PORT3,
+  SOURCE_MAX
+} eDmxSource;
+
+typedef enum
+{
+  MERGE_HTP = 0,
+  MERGE_LTP,
+  MERGE_MAX
+} eDmxMergeType;
+
 // Each Port configuration and status
 typedef struct
 {
@@ -36,9 +43,10 @@ typedef struct
                            // 0x01 Input
                            // 0x02 Merge Output
                            // 0x03 Mirror
-  uint8_t merge_source_a;  // merge source a - port id 0,1,2 (if self it's usb self)
-  uint8_t merge_source_b;  // merge source b
-  uint8_t merge_htp_ltp;   // merge method, 0x00 - htp, 0x01 ltp
+  eDmxSource merge_source_a;  // merge source a - port id 0,1,2 (if self it's usb self)
+  eDmxSource merge_source_b;  // merge source b
+  eDmxMergeType merge_htp_ltp;   // merge method, 0x00 - htp, 0x01 ltp
+  eDmxSource mirror_source;   // Mirror source
 } DMXPortConfig;
 
 typedef struct {
