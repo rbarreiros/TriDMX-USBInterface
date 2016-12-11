@@ -254,10 +254,8 @@ $(BUILD_NUMBER_FILE): $(CSRC)
 
 boot: build/$(PROJECT).bin
 	sudo ./host/sendcommand 254 0 ; sleep 3
-	sudo dfu-util -d 0483:df11 -a 0 -s $(LOAD_ADDRESS):leave -D build/$(PROJECT).bin
+	sudo dfu-util -d 1eaf:0003 -a 2 -D build/$(PROJECT).bin -R
 
 flash: build/$(PROJECT).bin
 	sudo ./tools/flash.sh
 
-flashbootloader:
-	sudo ./tools/flashboot.sh

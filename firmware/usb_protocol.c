@@ -106,17 +106,27 @@ THD_FUNCTION(USBThread, arg)
   sduObjectInit(&SDU1);
   sduStart(&SDU1, &serusbcfg);
 
-  usbDisconnectBus(serusbcfg.usbp);
+  palSetPadMode(USB_STATUS_LED_PORT, USB_STATUS_LED_PAD, PAL_MODE_OUTPUT_PUSHPULL);
+  
+  // USB Reset
+  palSetPadMode(GPIOB, 9, PAL_MODE_OUTPUT_OPENDRAIN);
+  palSetPad(GPIOB, 9);
   chThdSleepMilliseconds(500);
+  palClearPad(GPIOB, 9);
+
+  palClearPad(USB_STATUS_LED_PORT, USB_STATUS_LED_PAD);
+  
+  usbDisconnectBus(serusbcfg.usbp);
+  //chThdSleepMilliseconds(500);
   usbStart(serusbcfg.usbp, &usbcfg);
   usbConnectBus(serusbcfg.usbp);
 
+  palSetPad(USB_STATUS_LED_PORT, USB_STATUS_LED_PAD);
+    
   chEvtRegisterMask(chnGetEventSource(&SDU1), &el1, ALL_EVENTS);
 
   while(USBD1.state != USB_READY) chThdSleepMilliseconds(10);
   while(SDU1.state != SDU_READY) chThdSleepMilliseconds(10);
-
-  palSetPadMode(USB_STATUS_LED_PORT, USB_STATUS_LED_PAD, PAL_MODE_OUTPUT_PUSHPULL);
   
   while(!chThdShouldTerminateX())
   {
