@@ -9,10 +9,6 @@
 #define USB_ENDPOINT_IN  (LIBUSB_ENDPOINT_IN  | 1)   /* endpoint address */
 #define USB_ENDPOINT_OUT (LIBUSB_ENDPOINT_OUT | 1)   /* endpoint address */
 
-//Global variables:
-struct libusb_device_handle *devh = NULL;
-static libusb_context *ctx = NULL;
-
 enum {
   out_deinit,
   out_release,
@@ -30,6 +26,9 @@ int main(int argc, char **argv)
   int i, n;
   uint8_t data[60];
   unsigned int timeout = 25;
+
+  struct libusb_device_handle *devh = NULL;
+  static libusb_context *ctx = NULL;
   
   if(argc < 3)
   {
@@ -47,11 +46,13 @@ int main(int argc, char **argv)
     data[i-2] = atoi(argv[i]);
   }
 
+  /*
   printf("Command 0x%02x\n", command);
 
   for(i = 0; i < (argc - 2); i++)
     printf("Data 0x%02x\n", data[i]);
   printf("\n");
+  */
   
   //init libUSB
 
@@ -85,7 +86,7 @@ int main(int argc, char **argv)
     fprintf(stderr, "usb_claim_interface error %d\n", r);
     exitflag = out;
   } else  {
-    printf("Claimed interface\n");
+    //printf("Claimed interface\n");
     uint8_t tmp[64];
 
     tmp[0] = command;
@@ -96,10 +97,12 @@ int main(int argc, char **argv)
 
     if(r == 0)
     {
+      /*
       printf("sent %d bytes to device\n", n);
       for(int i = 0; i < n; i++)
         printf("0x%02x ", tmp[i]);
       printf("\n");
+      */
     }
     else
       printf("ERROR in bulk write: %d %s\n", r, libusb_error_name(r));
@@ -109,10 +112,14 @@ int main(int argc, char **argv)
     r = libusb_bulk_transfer(devh, USB_ENDPOINT_IN, buff, sizeof(buff), &nread, 30);
     if(r == 0)
     {
+      /*
       printf("Read %d\n", nread);
       for(int i = 0; i < nread; i++)
         printf("0x%02x ", buff[i]);
       printf("\n");
+      */
+      buff[nread] = '\0';
+      printf("%s\n", buff);
     }
   }
   

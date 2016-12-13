@@ -12,6 +12,7 @@
 // DO NOT USE GPIOA 1 BOOTLOADER TRIGGER PIN               //
 // DO NOT USE GPIOB 2 - BOOT1                              //
 // DO NOT USE GPIOB 3 and 4 - JTDO and JNTRST recpectively //
+// DO NOT USE GPIOB 9 - USB RESET PIN                      //
 //
 // WARNING WARNING WARNING WARNING WARNING WARNING WARNING //
 
@@ -58,7 +59,7 @@
 #define DMX3_LEDOUT_PAD     8
 
 #define DMX3_LEDIN_PORT     GPIOB
-#define DMX3_LEDIN_PAD      9
+#define DMX3_LEDIN_PAD      5
 
 // Board LEDS
 
